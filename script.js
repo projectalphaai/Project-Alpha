@@ -1,15 +1,22 @@
 document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("nav ul li a").forEach((anchor) => {
+  // Smooth scrolling for navigation links
+  document.querySelectorAll(".glassmorphism-nav ul li a").forEach((anchor) => {
     anchor.addEventListener("click", function (e) {
-      const target = document.querySelector(this.getAttribute("href"));
-      if (target) {
-        e.preventDefault();
-        target.scrollIntoView({ behavior: "smooth" });
+      e.preventDefault();
+      const targetId = this.getAttribute("href");
+      const targetElement = document.querySelector(targetId);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: "smooth" });
+      }
+      // Close mobile nav after clicking a link
+      if (window.innerWidth <= 768) {
+        navMenu.classList.remove("active");
       }
     });
   });
 
-  const faders = document.querySelectorAll(".fade-in");
+  // Intersection Observer for scroll animations
+  const fadeInElements = document.querySelectorAll(".fade-in");
 
   const appearOnScroll = new IntersectionObserver(
     (entries, observer) => {
@@ -22,22 +29,17 @@ document.addEventListener("DOMContentLoaded", () => {
     { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
   );
 
-  faders.forEach((fader) => {
-    appearOnScroll.observe(fader);
+  fadeInElements.forEach((el) => {
+    appearOnScroll.observe(el);
   });
 
+  // Mobile navigation toggle
   const navToggle = document.querySelector(".nav-toggle");
-  const navMenu = document.querySelector("nav ul");
+  const navMenu = document.querySelector(".glassmorphism-nav ul");
 
   if (navToggle && navMenu) {
     navToggle.addEventListener("click", () => {
       navMenu.classList.toggle("active");
-    });
-
-    navMenu.querySelectorAll("a").forEach((link) => {
-      link.addEventListener("click", () => {
-        navMenu.classList.remove("active");
-      });
     });
   }
 });
