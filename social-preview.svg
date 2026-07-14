@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" rx="36" fill="#060816"/>
+  <rect x="56" y="56" width="1088" height="518" rx="28" fill="url(#g)"/>
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6A11CB"/>
+      <stop offset="50%" stop-color="#2575FC"/>
+      <stop offset="100%" stop-color="#00FFFF"/>
+    </linearGradient>
+  </defs>
+  <text x="110" y="260" fill="#F5F7FF" font-family="Segoe UI, Arial, sans-serif" font-size="54" font-weight="700">Project Alpha AI</text>
+  <text x="110" y="330" fill="#EDEBFF" font-family="Segoe UI, Arial, sans-serif" font-size="32">Premium AI SaaS landing page concept</text>
+</svg>

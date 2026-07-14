@@ -3,347 +3,387 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Alpha - The Future of AI</title>    <link rel="stylesheet" href="style.css">
+    <meta name="description" content="Project Alpha AI is a premium AI SaaS concept landing page focused on polished UX, automation, and modern product storytelling.">
+    <meta name="robots" content="index,follow">
+    <meta name="theme-color" content="#060816">
+    <meta property="og:title" content="Project Alpha AI — Premium AI SaaS landing page">
+    <meta property="og:description" content="A polished AI SaaS concept landing page with premium visuals, interactions, and responsive sections.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="social-preview.svg">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>Project Alpha AI — Premium AI SaaS landing page</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="favicon.svg">
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
+    <div class="mouse-glow" aria-hidden="true"></div>
     <div class="animated-background"></div>
+    <div class="aurora aurora-one"></div>
+    <div class="aurora aurora-two"></div>
+    <div class="aurora aurora-three"></div>
 
     <header>
-        <nav class="glassmorphism-nav">
-            <div class="logo">Project Alpha <span class="ai-glow">AI</span></div>
+        <nav class="glassmorphism-nav" aria-label="Main navigation">
+            <a href="index.html" class="logo" data-nav-section="hero">Project Alpha <span class="ai-glow">AI</span></a>
             <ul>
-                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html" data-nav-section="hero">Home</a></li>
                 <li><a href="about.html">About</a></li>
-                <li><a href="services.html">Services</a></li>
+                <li><a href="services.html" data-nav-section="services">Services</a></li>
                 <li><a href="ai-solutions.html">AI Solutions</a></li>
-                <li><a href="pricing.html">Pricing</a></li>
-                <li><a href="contact.html">Contact</a></li>
+                <li><a href="pricing.html" data-nav-section="pricing">Pricing</a></li>
+                <li><a href="contact.html" data-nav-section="contact">Contact</a></li>
             </ul>
-            <button class="nav-toggle"><i class="fas fa-bars"></i></button>
+            <button class="nav-toggle" aria-label="Toggle navigation"><i class="fas fa-bars"></i></button>
         </nav>
     </header>
 
-    <section id="hero" class="hero-section">
-        <div class="hero-content">
-            <div class="hero-copy">
-                <div class="hero-badge">
-                    <i class="fas fa-sparkles"></i>
-                    <span>Premium AI OS for modern teams</span>
-                </div>
-                <h1>Turn bold ideas into <span class="gradient-text">high-impact intelligence</span></h1>
-                <p class="subtitle">Launch smarter automations, real-time analytics, and collaborative AI workflows from one elegant command center.</p>
-                <div class="hero-buttons">
-                    <a href="#features" class="cta-button primary-button">Explore Solutions</a>
-                    <a href="#contact" class="cta-button secondary-button">Book a Demo</a>
-                </div>
-                <ul class="hero-highlights">
-                    <li><i class="fas fa-check-circle"></i> Enterprise-grade security</li>
-                    <li><i class="fas fa-check-circle"></i> Instant insight delivery</li>
-                    <li><i class="fas fa-check-circle"></i> Seamless collaboration</li>
-                </ul>
-            </div>
-
-            <div class="hero-preview" aria-label="AI dashboard preview">
-                <div class="preview-card">
-                    <div class="preview-top">
-                        <span class="dot dot-red"></span>
-                        <span class="dot dot-yellow"></span>
-                        <span class="dot dot-green"></span>
+    <main>
+        <section id="hero" class="hero-section">
+            <div class="hero-content">
+                <div class="hero-copy">
+                    <div class="hero-badge">
+                        <i class="fas fa-sparkles"></i>
+                        <span>New • Premium AI OS for ambitious teams</span>
                     </div>
-                    <div class="preview-body">
-                        <div class="preview-sidebar">
-                            <span class="preview-pill active"></span>
-                            <span class="preview-pill"></span>
-                            <span class="preview-pill"></span>
+                    <h1>Build beautiful intelligence that feels <span class="gradient-text">effortless</span>.</h1>
+                    <p class="subtitle">Launch smarter automations, real-time insights, and collaborative AI workflows from a single polished command center designed to feel as premium as your product.</p>
+                    <div class="hero-buttons">
+                        <a href="#features" class="cta-button primary-button">Explore Platform</a>
+                        <a href="#contact" class="cta-button secondary-button">Book a Demo</a>
+                    </div>
+                    <ul class="hero-highlights">
+                        <li><i class="fas fa-check-circle"></i> Enterprise-grade security</li>
+                        <li><i class="fas fa-check-circle"></i> Instant insight delivery</li>
+                        <li><i class="fas fa-check-circle"></i> Seamless team collaboration</li>
+                    </ul>
+                </div>
+
+                <div class="hero-preview" aria-label="AI dashboard preview">
+                    <div class="preview-card">
+                        <div class="preview-top">
+                            <span class="dot dot-red"></span>
+                            <span class="dot dot-yellow"></span>
+                            <span class="dot dot-green"></span>
                         </div>
-                        <div class="preview-main">
-                            <div class="preview-chart">
-                                <div class="chart-bar bar-1"></div>
-                                <div class="chart-bar bar-2"></div>
-                                <div class="chart-bar bar-3"></div>
-                                <div class="chart-bar bar-4"></div>
+                        <div class="preview-body">
+                            <div class="preview-sidebar">
+                                <span class="preview-pill active"></span>
+                                <span class="preview-pill"></span>
+                                <span class="preview-pill"></span>
                             </div>
-                            <div class="preview-metrics">
-                                <div class="metric-card">
-                                    <p class="metric-label">Live insights</p>
-                                    <p class="metric-value">+82%</p>
+                            <div class="preview-main">
+                                <div class="preview-toolbar">
+                                    <span class="preview-chip chip-strong">Autopilot live</span>
+                                    <span class="preview-chip">98.4% accuracy</span>
                                 </div>
-                                <div class="metric-card">
-                                    <p class="metric-label">Automation</p>
-                                    <p class="metric-value">24/7</p>
+                                <div class="preview-chart">
+                                    <div class="chart-bar bar-1"></div>
+                                    <div class="chart-bar bar-2"></div>
+                                    <div class="chart-bar bar-3"></div>
+                                    <div class="chart-bar bar-4"></div>
+                                </div>
+                                <div class="preview-metrics">
+                                    <div class="metric-card">
+                                        <p class="metric-label">Live insights</p>
+                                        <p class="metric-value">+82%</p>
+                                    </div>
+                                    <div class="metric-card">
+                                        <p class="metric-label">Automation</p>
+                                        <p class="metric-value">24/7</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="hero-background-elements">
-            <div class="glass-orb orb-1"></div>
-            <div class="glass-orb orb-2"></div>
-            <div class="glass-orb orb-3"></div>
-        </div>
-    </section>
+            <div class="hero-background-elements">
+                <div class="glass-orb orb-1"></div>
+                <div class="glass-orb orb-2"></div>
+                <div class="glass-orb orb-3"></div>
+            </div>
+        </section>
 
-    <section id="services" class="services-section fade-in">
-        <div class="section-heading">
-            <p class="eyebrow">AI Services</p>
-            <h2>Intelligent solutions built for momentum</h2>
-            <p class="section-description">From launch strategy to autonomous operations, we tailor every engagement for measurable growth and reliability.</p>
-        </div>
-        <div class="services-grid">
-            <article class="service-card">
-                <i class="fas fa-robot service-icon"></i>
-                <h3>AI Strategy</h3>
-                <p>Define key use cases, priorities, and a roadmap that accelerates adoption while reducing risk.</p>
-            </article>
-            <article class="service-card">
-                <i class="fas fa-microchip service-icon"></i>
-                <h3>Workflow Automation</h3>
-                <p>Automate repetitive tasks with secure AI agents that improve speed, consistency, and throughput.</p>
-            </article>
-            <article class="service-card">
-                <i class="fas fa-chart-line service-icon"></i>
-                <h3>Predictive Intelligence</h3>
-                <p>Turn fragmented data into real-time predictions, insights, and decision-ready dashboards.</p>
-            </article>
-        </div>
-    </section>
+        <section class="trusted-section fade-in" aria-label="Demo brand section">
+            <p class="eyebrow">Demo brand section</p>
+            <div class="logo-cloud">
+                <span>Replace with real brands</span>
+                <span>Demo client list</span>
+                <span>Use your own logos</span>
+                <span>Replace this content</span>
+                <span>Honest placeholder</span>
+            </div>
+        </section>
 
-    <section id="why-us" class="why-us-section fade-in">
-        <div class="section-heading">
-            <p class="eyebrow">Why Choose Us</p>
-            <h2>Built for clarity, speed, and trust</h2>
-            <p class="section-description">We combine premium design, intelligent automation, and enterprise-ready infrastructure to help ambitious teams scale faster.</p>
-        </div>
-        <div class="why-grid">
-            <article class="why-card">
-                <i class="fas fa-bolt"></i>
-                <h3>Launch faster</h3>
-                <p>Move from idea to polished AI experience in record time with a streamlined delivery process.</p>
-            </article>
-            <article class="why-card">
-                <i class="fas fa-shield-alt"></i>
-                <h3>Secure by design</h3>
-                <p>Enterprise safeguards, compliant workflows, and resilient architecture come built in.</p>
-            </article>
-            <article class="why-card">
-                <i class="fas fa-layer-group"></i>
-                <h3>Tailored results</h3>
-                <p>Every solution is shaped around your data, your users, and your growth goals.</p>
-            </article>
-        </div>
-    </section>
+        <section id="services" class="services-section fade-in">
+            <div class="section-heading">
+                <p class="eyebrow">AI Services</p>
+                <h2>Intelligent systems designed for momentum</h2>
+                <p class="section-description">From launch strategy to autonomous operations, we tailor every engagement for measurable growth, refined clarity, and reliable delivery.</p>
+            </div>
+            <div class="services-grid">
+                <article class="service-card">
+                    <i class="fas fa-robot service-icon"></i>
+                    <h3>AI Strategy</h3>
+                    <p>Shape the right roadmap with high-impact use cases, governance, and a delivery plan that scales with confidence.</p>
+                </article>
+                <article class="service-card">
+                    <i class="fas fa-microchip service-icon"></i>
+                    <h3>Workflow Automation</h3>
+                    <p>Automate repetitive operations with secure AI agents that improve speed, consistency, and throughput.</p>
+                </article>
+                <article class="service-card">
+                    <i class="fas fa-chart-line service-icon"></i>
+                    <h3>Predictive Intelligence</h3>
+                    <p>Turn fragmented data into real-time predictions, insights, and decision-ready dashboards your team actually uses.</p>
+                </article>
+            </div>
+        </section>
 
-    <section id="ai-stats" class="stats-section">
-        <div class="section-heading">
-            <p class="eyebrow">Statistics</p>
-            <h2>Trusted by growth-focused teams worldwide</h2>
-        </div>
-        <div class="stats-container">
-            <div class="stat-card fade-in">
-                <h3 class="stat-number" data-target="100">0</h3>
-                <p class="stat-label">Projects Completed</p>
+        <section id="why-us" class="why-us-section fade-in">
+            <div class="section-heading">
+                <p class="eyebrow">Why Choose Us</p>
+                <h2>Built for clarity, speed, and trust</h2>
+                <p class="section-description">We combine premium design, intelligent automation, and enterprise-ready infrastructure to help ambitious teams scale faster.</p>
             </div>
-            <div class="stat-card fade-in">
-                <h3 class="stat-number" data-target="50">0</h3>
-                <p class="stat-label">Happy Clients</p>
+            <div class="why-grid">
+                <article class="why-card">
+                    <i class="fas fa-bolt"></i>
+                    <h3>Launch faster</h3>
+                    <p>Move from idea to polished AI experience in record time with a streamlined delivery process.</p>
+                </article>
+                <article class="why-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>Secure by design</h3>
+                    <p>Enterprise safeguards, compliant workflows, and resilient architecture come built in.</p>
+                </article>
+                <article class="why-card">
+                    <i class="fas fa-layer-group"></i>
+                    <h3>Tailored results</h3>
+                    <p>Every solution is shaped around your data, your users, and your growth goals.</p>
+                </article>
             </div>
-            <div class="stat-card fade-in">
-                <h3 class="stat-number" data-target="99">0</h3>
-                <p class="stat-label">Satisfaction Rate (%)</p>
-            </div>
-            <div class="stat-card fade-in">
-                <h3 class="stat-number" data-target="10000">0</h3>
-                <p class="stat-label">AI Models Deployed</p>
-            </div>
-        </div>
-    </section>
+        </section>
 
-    <section id="features" class="features-section">
-        <div class="section-heading">
-            <p class="eyebrow">AI Features</p>
-            <h2>Premium capabilities for next-level execution</h2>
-            <p class="section-description">Discover the core capabilities that help product teams build smarter, faster, and with less friction.</p>
-        </div>
-        <div class="feature-grid">
-            <div class="feature-card fade-in">
-                <i class="fas fa-brain feature-icon"></i>
-                <h3>Cognitive Automation</h3>
-                <p>Streamline complex workflows and elevate efficiency with intelligent, self-learning systems.</p>
+        <section id="ai-stats" class="stats-section">
+            <div class="section-heading">
+                <p class="eyebrow">Demo metrics</p>
+                <h2>Replace these placeholders with your live numbers</h2>
             </div>
-            <div class="feature-card fade-in">
-                <i class="fas fa-rocket feature-icon"></i>
-                <h3>Hyper-Performance AI</h3>
-                <p>Experience unparalleled speed and scalability with our optimized AI algorithms.</p>
-            </div>
-            <div class="feature-card fade-in">
-                <i class="fas fa-shield-alt feature-icon"></i>
-                <h3>Advanced Security</h3>
-                <p>Safeguard your critical data with multi-layered, AI-powered security protocols.</p>
-            </div>
-            <div class="feature-card fade-in">
-                <i class="fas fa-cogs feature-icon"></i>
-                <h3>Seamless Integration</h3>
-                <p>Integrate our robust AI solutions effortlessly into your existing tech stack.</p>
-            </div>
-            <div class="feature-card fade-in">
-                <i class="fas fa-chart-line feature-icon"></i>
-                <h3>Predictive Intelligence</h3>
-                <p>Leverage cutting-edge AI to forecast trends and make data-driven decisions.</p>
-            </div>
-            <div class="feature-card fade-in">
-                <i class="fas fa-user-friends feature-icon"></i>
-                <h3>Intuitive Experience</h3>
-                <p>Engage with powerful AI through elegantly designed and user-centric interfaces.</p>
-            </div>
-        </div>
-    </section>
-
-    <section id="call-to-action" class="cta-section fade-in">
-        <div class="cta-content">
-            <p class="eyebrow">Contact CTA</p>
-            <h2>Ready to shape your next AI breakthrough?</h2>
-            <p>Join ambitious brands building intelligent products with elegant automation, deep insights, and dependable delivery.</p>
-            <a href="#contact" class="cta-button primary-button">Start Your AI Journey</a>
-        </div>
-    </section>
-
-    <section id="testimonials" class="testimonials fade-in">
-        <div class="section-heading">
-            <p class="eyebrow">Testimonials</p>
-            <h2>What our clients say</h2>
-            <p class="section-description">Teams choose Project Alpha for its blend of strategic insight, elegant design, and measurable impact.</p>
-        </div>
-        <div class="testimonial-slider">
-            <div class="testimonial-card">
-                <p class="quote">"Project Alpha AI has revolutionized our operations. The efficiency gains are incredible!"</p>
-                <p class="author">- Jane Doe, CEO of TechCorp</p>
-            </div>
-            <div class="testimonial-card">
-                <p class="quote">"The most intuitive and powerful AI platform we've ever used. Truly world-class."</p>
-                <p class="author">- John Smith, CTO of Innovate Inc.</p>
-            </div>
-            <div class="testimonial-card">
-                <p class="quote">"Security is paramount for us, and Project Alpha AI delivers beyond expectations."</p>
-                <p class="author">- Emily White, Head of Security at Global Solutions</p>
-            </div>
-        </div>
-    </section>
-
-    <section id="pricing" class="pricing fade-in">
-        <div class="section-heading">
-            <p class="eyebrow">Pricing</p>
-            <h2>Flexible plans for every stage</h2>
-            <p class="section-description">Choose a package that matches your team size, goals, and ambition.</p>
-        </div>
-        <div class="pricing-cards">
-            <div class="pricing-card">
-                <h3>Starter</h3>
-                <p class="price">$49<span>/month</span></p>
-                <ul>
-                    <li><i class="fas fa-check-circle"></i> Basic AI Access</li>
-                    <li><i class="fas fa-check-circle"></i> 1000 API Calls</li>
-                    <li><i class="fas fa-check-circle"></i> Email Support</li>
-                    <li><i class="fas fa-times-circle"></i> Dedicated AI Model</li>
-                </ul>
-                <a href="#contact" class="btn btn-primary">Choose Plan</a>
-            </div>
-            <div class="pricing-card featured">
-                <h3>Pro</h3>
-                <p class="price">$149<span>/month</span></p>
-                <ul>
-                    <li><i class="fas fa-check-circle"></i> Advanced AI Access</li>
-                    <li><i class="fas fa-check-circle"></i> 10,000 API Calls</li>
-                    <li><i class="fas fa-check-circle"></i> Priority Support</li>
-                    <li><i class="fas fa-check-circle"></i> Dedicated AI Model</li>
-                </ul>
-                <a href="#contact" class="btn btn-primary">Choose Plan</a>
-            </div>
-            <div class="pricing-card">
-                <h3>Enterprise</h3>
-                <p class="price">Custom</p>
-                <ul>
-                    <li><i class="fas fa-check-circle"></i> Unlimited AI Access</li>
-                    <li><i class="fas fa-check-circle"></i> Custom API Limits</li>
-                    <li><i class="fas fa-check-circle"></i> 24/7 Premium Support</li>
-                    <li><i class="fas fa-check-circle"></i> On-premise Deployment</li>
-                </ul>
-                <a href="#contact" class="btn btn-primary">Contact Sales</a>
-            </div>
-        </div>
-    </section>
-
-    <section id="faq" class="faq fade-in">
-        <div class="section-heading">
-            <p class="eyebrow">FAQ</p>
-            <h2>Questions, answered clearly</h2>
-            <p class="section-description">Everything you need to know before you launch with Project Alpha AI.</p>
-        </div>
-        <div class="faq-container">
-            <div class="faq-item active">
-                <button class="faq-question">What is Project Alpha AI?<span><i class="fas fa-plus"></i></span></button>
-                <div class="faq-answer">
-                    <p>Project Alpha AI is a leading artificial intelligence platform designed to provide cutting-edge solutions for automation, data analysis, and predictive modeling across various industries.</p>
+            <div class="stats-container">
+                <div class="stat-card fade-in">
+                    <h3 class="stat-number" data-target="24" data-suffix="+">0</h3>
+                    <p class="stat-label">Demo metric — replace with your real number</p>
+                </div>
+                <div class="stat-card fade-in">
+                    <h3 class="stat-number" data-target="18" data-suffix="+">0</h3>
+                    <p class="stat-label">Demo metric — replace with your real number</p>
+                </div>
+                <div class="stat-card fade-in">
+                    <h3 class="stat-number" data-target="96" data-suffix="%">0</h3>
+                    <p class="stat-label">Demo metric — replace with your real number</p>
+                </div>
+                <div class="stat-card fade-in">
+                    <h3 class="stat-number" data-target="5" data-suffix="x">0</h3>
+                    <p class="stat-label">Demo metric — replace with your real number</p>
                 </div>
             </div>
-            <div class="faq-item">
-                <button class="faq-question">How can Project Alpha AI benefit my business?<span><i class="fas fa-plus"></i></span></button>
-                <div class="faq-answer">
-                    <p>Our AI solutions can significantly boost efficiency, enhance security, provide deep insights through advanced analytics, and automate repetitive tasks, leading to substantial cost savings and improved decision-making.</p>
-                </div>
-            </div>
-            <div class="faq-item">
-                <button class="faq-question">Is Project Alpha AI mobile-friendly?<span><i class="fas fa-plus"></i></span></button>
-                <div class="faq-answer">
-                    <p>Yes, all our interfaces and solutions are developed with a mobile-first approach, ensuring a seamless and responsive experience across all devices.</p>
-                </div>
-            </div>
-            <div class="faq-item">
-                <button class="faq-question">What kind of support do you offer?<span><i class="fas fa-plus"></i></span></button>
-                <div class="faq-answer">
-                    <p>We offer various support tiers, from email support for our Starter plan to 24/7 premium support for Enterprise clients, ensuring you always have the assistance you need.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+        </section>
 
-    <section id="contact" class="contact fade-in">
-        <div class="section-heading">
-            <p class="eyebrow">Contact</p>
-            <h2>Ready to build the next era of AI?</h2>
-            <p class="section-description">Let’s discuss your goals and craft the right experience for your team.</p>
-        </div>
-        <div class="contact-grid">
-            <div class="contact-card">
-                <h3>Let’s connect</h3>
-                <p>Tell us about your product, workflow, or ambition. We’ll help you map the fastest path to impact.</p>
-                <ul>
-                    <li><i class="fas fa-envelope"></i> hello@projectalpha.ai</li>
-                    <li><i class="fas fa-phone"></i> +1 (800) 555-0188</li>
-                    <li><i class="fas fa-map-marker-alt"></i> 250 Market Street, San Francisco</li>
-                </ul>
+        <section id="features" class="features-section">
+            <div class="section-heading">
+                <p class="eyebrow">Platform Features</p>
+                <h2>Premium capabilities for next-level execution</h2>
+                <p class="section-description">Discover the core capabilities that help product teams build smarter, faster, and with less friction.</p>
             </div>
-            <form class="contact-form">
-                <div class="form-group">
-                    <input type="text" id="name" placeholder="Your Name" required>
+            <div class="feature-grid">
+                <div class="feature-card fade-in">
+                    <i class="fas fa-brain feature-icon"></i>
+                    <h3>Cognitive Automation</h3>
+                    <p>Streamline complex workflows and elevate efficiency with intelligent, self-learning systems.</p>
                 </div>
-                <div class="form-group">
-                    <input type="email" id="email" placeholder="Your Email" required>
+                <div class="feature-card fade-in">
+                    <i class="fas fa-rocket feature-icon"></i>
+                    <h3>Hyper-Performance AI</h3>
+                    <p>Experience unparalleled speed and scalability with our optimized AI algorithms.</p>
                 </div>
-                <div class="form-group">
-                    <textarea id="message" placeholder="Your Message" rows="6" required></textarea>
+                <div class="feature-card fade-in">
+                    <i class="fas fa-shield-alt feature-icon"></i>
+                    <h3>Advanced Security</h3>
+                    <p>Safeguard your critical data with multi-layered, AI-powered security protocols.</p>
                 </div>
-                <button type="submit" class="btn btn-primary">Send Message</button>
-            </form>
-        </div>
-    </section>
+                <div class="feature-card fade-in">
+                    <i class="fas fa-cogs feature-icon"></i>
+                    <h3>Seamless Integration</h3>
+                    <p>Integrate our robust AI solutions effortlessly into your existing tech stack.</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <i class="fas fa-chart-line feature-icon"></i>
+                    <h3>Predictive Intelligence</h3>
+                    <p>Leverage cutting-edge AI to forecast trends and make data-driven decisions.</p>
+                </div>
+                <div class="feature-card fade-in">
+                    <i class="fas fa-user-friends feature-icon"></i>
+                    <h3>Intuitive Experience</h3>
+                    <p>Engage with powerful AI through elegantly designed and user-centric interfaces.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="call-to-action" class="cta-section fade-in">
+            <div class="cta-content">
+                <p class="eyebrow">Ready to launch</p>
+                <h2>Shape your next breakthrough with elegant AI.</h2>
+                <p>Join ambitious brands building intelligent products with refined automation, deep insights, and dependable delivery.</p>
+                <a href="#contact" class="cta-button primary-button">Start Your AI Journey</a>
+            </div>
+        </section>
+
+        <section id="testimonials" class="testimonials fade-in">
+            <div class="section-heading">
+                <p class="eyebrow">Testimonials</p>
+                <h2>Replace with real customer stories</h2>
+                <p class="section-description">This section is intentionally left as demo content so you can swap in honest testimonials from real users later.</p>
+            </div>
+            <div class="testimonial-slider">
+                <div class="testimonial-card">
+                    <p class="quote">“Demo testimonial — replace with a real customer quote and name.”</p>
+                    <p class="author">— Demo customer placeholder</p>
+                </div>
+                <div class="testimonial-card">
+                    <p class="quote">“Demo testimonial — keep it factual and attributable to a real user.”</p>
+                    <p class="author">— Demo customer placeholder</p>
+                </div>
+                <div class="testimonial-card">
+                    <p class="quote">“Demo testimonial — add your own authentic social proof here.”</p>
+                    <p class="author">— Demo customer placeholder</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="pricing" class="pricing fade-in">
+            <div class="section-heading">
+                <p class="eyebrow">Pricing</p>
+                <h2>Flexible plans for every stage</h2>
+                <p class="section-description">Choose a package that matches your team size, goals, and ambition.</p>
+            </div>
+            <div class="pricing-cards">
+                <div class="pricing-card">
+                    <h3>Starter</h3>
+                    <p class="price">$49<span>/month</span></p>
+                    <ul>
+                        <li><i class="fas fa-check-circle"></i> Basic AI Access</li>
+                        <li><i class="fas fa-check-circle"></i> 1000 API Calls</li>
+                        <li><i class="fas fa-check-circle"></i> Email Support</li>
+                        <li><i class="fas fa-times-circle"></i> Dedicated AI Model</li>
+                    </ul>
+                    <a href="#contact" class="btn btn-primary">Choose Plan</a>
+                </div>
+                <div class="pricing-card featured">
+                    <div class="plan-badge">Most Popular</div>
+                    <h3>Pro</h3>
+                    <p class="price">$149<span>/month</span></p>
+                    <ul>
+                        <li><i class="fas fa-check-circle"></i> Advanced AI Access</li>
+                        <li><i class="fas fa-check-circle"></i> 10,000 API Calls</li>
+                        <li><i class="fas fa-check-circle"></i> Priority Support</li>
+                        <li><i class="fas fa-check-circle"></i> Dedicated AI Model</li>
+                    </ul>
+                    <a href="#contact" class="btn btn-primary">Choose Plan</a>
+                </div>
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <p class="price">Custom</p>
+                    <ul>
+                        <li><i class="fas fa-check-circle"></i> Unlimited AI Access</li>
+                        <li><i class="fas fa-check-circle"></i> Custom API Limits</li>
+                        <li><i class="fas fa-check-circle"></i> 24/7 Premium Support</li>
+                        <li><i class="fas fa-check-circle"></i> On-premise Deployment</li>
+                    </ul>
+                    <a href="#contact" class="btn btn-primary">Contact Sales</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="faq" class="faq fade-in">
+            <div class="section-heading">
+                <p class="eyebrow">FAQ</p>
+                <h2>Questions, answered clearly</h2>
+                <p class="section-description">Everything you need to know before you launch with Project Alpha AI.</p>
+            </div>
+            <div class="faq-container">
+                <div class="faq-item active">
+                    <button class="faq-question" aria-expanded="true">What is Project Alpha AI?<span><i class="fas fa-plus"></i></span></button>
+                    <div class="faq-answer">
+                        <p>Project Alpha AI is a leading artificial intelligence platform designed to provide cutting-edge solutions for automation, data analysis, and predictive modeling across various industries.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">How can Project Alpha AI benefit my business?<span><i class="fas fa-plus"></i></span></button>
+                    <div class="faq-answer">
+                        <p>Our AI solutions can significantly boost efficiency, enhance security, provide deep insights through advanced analytics, and automate repetitive tasks, leading to substantial cost savings and improved decision-making.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">Is Project Alpha AI mobile-friendly?<span><i class="fas fa-plus"></i></span></button>
+                    <div class="faq-answer">
+                        <p>Yes, all our interfaces and solutions are developed with a mobile-first approach, ensuring a seamless and responsive experience across all devices.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">What kind of support do you offer?<span><i class="fas fa-plus"></i></span></button>
+                    <div class="faq-answer">
+                        <p>We offer various support tiers, from email support for our Starter plan to 24/7 premium support for Enterprise clients, ensuring you always have the assistance you need.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="contact fade-in">
+            <div class="section-heading">
+                <p class="eyebrow">Contact</p>
+                <h2>Ready to build the next era of AI?</h2>
+                <p class="section-description">Let’s discuss your goals and craft the right experience for your team.</p>
+            </div>
+            <div class="contact-grid">
+                <div class="contact-card">
+                    <h3>Let’s connect</h3>
+                    <p>Tell us about your product, workflow, or ambition. We’ll help you map the fastest path to impact.</p>
+                    <ul>
+                        <li><i class="fas fa-envelope"></i> Demo contact details — replace with your real email</li>
+                        <li><i class="fas fa-phone"></i> Demo contact details — replace with your real phone</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Demo contact details — replace with your real location</li>
+                    </ul>
+                </div>
+                <form class="contact-form">
+                    <div class="form-group">
+                        <label class="sr-only" for="name">Your Name</label>
+                        <input type="text" id="name" name="name" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="sr-only" for="email">Your Email</label>
+                        <input type="email" id="email" name="email" placeholder="Your Email" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="sr-only" for="message">Your Message</label>
+                        <textarea id="message" name="message" placeholder="Your Message" rows="6" required></textarea>
+                    </div>
+                    <div class="form-status" role="status" aria-live="polite"></div>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-text">Send Message</span>
+                        <span class="btn-loader" aria-hidden="true"></span>
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
 
     <footer>
         <div class="footer-container">
             <div class="footer-logo">Project Alpha <span class="gradient-text">AI</span></div>
-            <nav class="footer-nav">
+            <nav class="footer-nav" aria-label="Footer navigation">
                 <ul>
                     <li><a href="index.html">Home</a></li>
                     <li><a href="about.html">About</a></li>
@@ -359,7 +399,7 @@
                 <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                 <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
             </div>
-            <p class="copyright">&copy; 2026 Project Alpha AI. All rights reserved.</p>
+            <p class="copyright">© 2026 Project Alpha AI. All rights reserved.</p>
         </div>
     </footer>
 
