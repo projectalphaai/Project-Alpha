@@ -178,24 +178,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.contact-form').forEach((form) => form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (form.dataset.submitting === 'true') return;
     const status = form.querySelector('.form-status');
     const submit = form.querySelector('[type="submit"]');
     if (!form.checkValidity()) { form.reportValidity(); return; }
     const endpoint = form.getAttribute('action') || '';
-    if (endpoint.includes('YOUR_FORM_ID')) {
-      if (status) { status.textContent = 'Formspree setup required: replace YOUR_FORM_ID before launch.'; status.className = 'form-status error'; }
-      return;
-    }
-    if (submit) { submit.disabled = true; submit.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Sending'; }
+    form.dataset.submitting = 'true';
+    if (submit) { submit.disabled = true; submit.setAttribute('aria-disabled', 'true'); submit.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Sending'; }
     try {
       const response = await fetch(endpoint, { method: 'POST', body: new FormData(form), headers: { Accept: 'application/json' } });
       if (!response.ok) throw new Error();
       form.reset();
-      if (status) { status.textContent = 'Thanks - your enquiry has been sent.'; status.className = 'form-status success'; }
+      if (status) { status.textContent = 'Thank you. Your enquiry was sent successfully, and we will be in touch shortly.'; status.className = 'form-status success'; }
     } catch {
-      if (status) { status.textContent = 'Unable to send. Please email hello@projectalpha.ai.'; status.className = 'form-status error'; }
+      if (status) { status.textContent = 'Your enquiry could not be sent. Please try again or email hello@projectalpha.ai.'; status.className = 'form-status error'; }
     } finally {
-      if (submit) { submit.disabled = false; submit.innerHTML = 'Send enquiry <i class="fas fa-arrow-right"></i>'; }
+      form.dataset.submitting = 'false';
+      if (submit) { submit.disabled = false; submit.removeAttribute('aria-disabled'); submit.innerHTML = 'Send enquiry <i class="fas fa-arrow-right"></i>'; }
     }
   }));
 
