@@ -71,6 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
       column.insertAdjacentHTML('beforeend', '<a href="blog.html">Insights</a><a href="careers.html">Careers</a>');
     }
   });
+  document.querySelectorAll('.site-footer').forEach((footer) => {
+    const container = footer.querySelector(':scope > .container');
+    if (container && !container.querySelector('.footer-cta')) {
+      container.insertAdjacentHTML('afterbegin', '<div class="footer-cta"><div><span class="eyebrow">Build your AI advantage</span><h2>Make the next workflow your smartest one.</h2></div><a class="btn btn-primary" href="contact.html">Start a conversation <i class="fas fa-arrow-right"></i></a></div>');
+    }
+  });
   document.querySelectorAll('.socials a[href="#"]').forEach((link) => {
     const label = link.getAttribute('aria-label');
     if (label === 'LinkedIn') link.href = 'https://www.linkedin.com/';
@@ -138,8 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     requestAnimationFrame(step);
   };
-  if (reduceMotion) counters.forEach(animateCounter);
-  else {
+  if (!reduceMotion) {
     const counterObserver = new IntersectionObserver((entries, observer) => entries.forEach((entry) => {
       if (entry.isIntersecting) { animateCounter(entry.target); observer.unobserve(entry.target); }
     }), { threshold: .55 });
