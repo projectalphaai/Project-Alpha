@@ -31,13 +31,20 @@ document.addEventListener('DOMContentLoaded', () => {
   progress.setAttribute('aria-hidden', 'true');
   document.body.prepend(progress);
 
-  const loader = document.createElement('div');
-  loader.className = 'site-loader';
-  loader.innerHTML = '<div class="loader-mark"><i class="fas fa-sparkles"></i></div><span>Project Alpha AI</span>';
-  loader.setAttribute('aria-hidden', 'true');
-  document.body.prepend(loader);
-  window.addEventListener('load', () => window.setTimeout(() => loader.classList.add('is-hidden'), 260), { once: true });
-  window.setTimeout(() => loader.classList.add('is-hidden'), 1800);
+  if (!sessionStorage.getItem('alpha-loaded')) {
+    const loader = document.createElement('div');
+    loader.className = 'site-loader';
+    loader.innerHTML = '<div class="loader-mark"><i class="fas fa-sparkles"></i></div><span>Project Alpha AI</span>';
+    loader.setAttribute('aria-hidden', 'true');
+    document.body.prepend(loader);
+    const dismissLoader = () => {
+      loader.classList.add('is-hidden');
+      sessionStorage.setItem('alpha-loaded', 'true');
+      window.setTimeout(() => loader.remove(), 600);
+    };
+    window.addEventListener('load', dismissLoader, { once: true });
+    window.setTimeout(dismissLoader, 900);
+  }
 
   const savedTheme = localStorage.getItem('alpha-theme');
   const preferredLight = window.matchMedia('(prefers-color-scheme: light)').matches;
@@ -63,6 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (heading === 'Company' && !column.querySelector('[href="blog.html"]')) {
       column.insertAdjacentHTML('beforeend', '<a href="blog.html">Insights</a><a href="careers.html">Careers</a>');
     }
+  });
+  document.querySelectorAll('.socials a[href="#"]').forEach((link) => {
+    const label = link.getAttribute('aria-label');
+    if (label === 'LinkedIn') link.href = 'https://www.linkedin.com/';
+    if (label === 'Instagram') link.href = 'https://www.instagram.com/';
+    link.target = '_blank';
+    link.rel = 'noopener';
   });
 
   const closeMenu = () => {
@@ -92,23 +106,15 @@ document.addEventListener('DOMContentLoaded', () => {
   updateScrollUI();
 
   const revealItems = document.querySelectorAll('.reveal');
-  revealItems.forEach((item, index) => {
-    item.dataset.aos = 'fade-up';
-    item.dataset.aosDuration = '700';
-    item.dataset.aosDelay = String(Math.min((index % 4) * 55, 165));
-  });
-  if (reduceMotion) revealItems.forEach((item) => item.classList.add('visible'));
+  revealItems.forEach((item, index) => { item.dataset.delay = String(index % 4); });
+  if (reduceMotion || !('IntersectionObserver' in window)) revealItems.forEach((item) => item.classList.add('visible'));
   else {
-    const aosStyles = document.createElement('link');
-    aosStyles.rel = 'stylesheet';
-    aosStyles.href = 'https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css';
-    document.head.appendChild(aosStyles);
-    const aosScript = document.createElement('script');
-    aosScript.src = 'https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js';
-    aosScript.onload = () => window.AOS?.init({ once: true, offset: 48, duration: 700, easing: 'ease-out-cubic' });
-    aosScript.onerror = () => revealItems.forEach((item) => item.classList.add('visible'));
-    document.body.appendChild(aosScript);
-    window.setTimeout(() => { if (!window.AOS) revealItems.forEach((item) => item.classList.add('visible')); }, 3000);
+    const revealObserver = new IntersectionObserver((entries, observer) => entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }), { rootMargin: '0px 0px -7% 0px', threshold: .08 });
+    revealItems.forEach((item) => revealObserver.observe(item));
   }
 
   // Animated counters retain their suffix and run only when first visible.
