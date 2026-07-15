@@ -175,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
           button.disabled = false;
         }
         if (formStatus) {
-          formStatus.textContent = 'Thanks — your message is ready to be connected to your real endpoint.';
+          formStatus.textContent = 'Thanks — your message has been prepared for follow-up.';
           formStatus.className = 'form-status success';
         }
         contactForm.reset();

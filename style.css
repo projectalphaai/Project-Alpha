@@ -257,6 +257,24 @@ footer { background-color: #050510; color: var(--light-text); text-align: center
 .footer-nav ul li a:hover::after, .footer-nav ul li a:focus-visible::after { width: 100%; }
 .social-links a { color: var(--light-text); font-size: 1.7rem; margin: 0 0.8rem; transition: color 0.3s ease, transform 0.3s ease; }
 .social-links a:hover, .social-links a:focus-visible { color: var(--primary-color); transform: translateY(-6px); }
+.whatsapp-float {
+    position: fixed;
+    right: 1.2rem;
+    bottom: 1.2rem;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: 0 16px 40px rgba(18, 140, 126, 0.35);
+    text-decoration: none;
+    z-index: 900;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.whatsapp-float:hover, .whatsapp-float:focus-visible { transform: translateY(-4px) scale(1.03); box-shadow: 0 20px 45px rgba(18, 140, 126, 0.4); }
 .copyright { margin-top: 1rem; font-size: 0.9rem; color: var(--light-text); }
 
 @keyframes fadeInSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
