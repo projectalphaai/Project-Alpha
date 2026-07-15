@@ -1,186 +1,92 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const navMenu = document.querySelector(".glassmorphism-nav ul");
-  const navBar = document.querySelector(".glassmorphism-nav");
-  const navLinks = document.querySelectorAll('.glassmorphism-nav a[data-nav-section]');
-  const sections = Array.from(document.querySelectorAll('main section[id], section[data-section]'));
-  const fadeInElements = document.querySelectorAll(".fade-in");
-  const counters = document.querySelectorAll(".stat-number");
-  const mouseGlow = document.querySelector('.mouse-glow');
-  const navToggle = document.querySelector(".nav-toggle");
-  const contactForm = document.querySelector('.contact-form');
-  const formStatus = document.querySelector('.form-status');
+document.addEventListener('DOMContentLoaded', () => {
+  const navbar = document.querySelector('.navbar');
+  const toggle = document.querySelector('.nav-toggle');
+  const panel = document.querySelector('.nav-panel');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  if (!reduceMotion && mouseGlow && window.innerWidth > 768) {
-    window.addEventListener('pointermove', (event) => {
-      mouseGlow.style.opacity = '1';
-      mouseGlow.style.transform = `translate(${event.clientX - 140}px, ${event.clientY - 140}px)`;
-    });
-    window.addEventListener('pointerleave', () => {
-      mouseGlow.style.opacity = '0';
-    });
-  }
-
-  const setActiveNav = () => {
-    const scrollPosition = window.scrollY + 140;
-    let activeId = 'hero';
-
-    sections.forEach((section) => {
-      if (section.offsetTop <= scrollPosition) {
-        activeId = section.id || section.dataset.section || 'hero';
-      }
-    });
-
-    navLinks.forEach((link) => {
-      const isActive = link.dataset.navSection === activeId;
-      link.classList.toggle('active', isActive);
-    });
+  const closeMenu = () => {
+    panel?.classList.remove('is-open');
+    toggle?.setAttribute('aria-expanded', 'false');
   };
 
-  const appearOnScroll = new IntersectionObserver(
-    (entries, observer) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('appear');
-        observer.unobserve(entry.target);
-      });
-    },
-    { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
-  );
-
-  fadeInElements.forEach((el) => appearOnScroll.observe(el));
-
-  const counterObserver = new IntersectionObserver(
-    (entries, observer) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-
-        const element = entry.target;
-        const rawTarget = element.dataset.target;
-        const target = rawTarget !== undefined ? Number(rawTarget) : NaN;
-        const suffix = element.dataset.suffix || '';
-
-        if (!Number.isFinite(target)) {
-          element.textContent = element.textContent.trim();
-          observer.unobserve(element);
-          return;
-        }
-
-        const duration = 1400;
-        const startTime = performance.now();
-
-        const updateCounter = (now) => {
-          const progress = Math.min(1, (now - startTime) / duration);
-          const value = Math.floor(progress * target);
-          element.textContent = `${value}${suffix}`;
-
-          if (progress < 1) {
-            requestAnimationFrame(updateCounter);
-          } else {
-            element.textContent = `${target}${suffix}`;
-          }
-        };
-
-        requestAnimationFrame(updateCounter);
-        observer.unobserve(element);
-      });
-    },
-    { threshold: 0.6 }
-  );
-
-  counters.forEach((counter) => counterObserver.observe(counter));
-
-  const toggleNav = () => {
-    if (navMenu) {
-      navMenu.classList.toggle('active');
-    }
-  };
-
-  if (navToggle && navMenu) {
-    navToggle.addEventListener('click', toggleNav);
-  }
-
-  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-    anchor.addEventListener('click', function (e) {
-      e.preventDefault();
-      const targetId = this.getAttribute('href');
-      const targetElement = document.querySelector(targetId);
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
-      }
-      if (window.innerWidth <= 768 && navMenu) {
-        navMenu.classList.remove('active');
-      }
-    });
+  toggle?.addEventListener('click', () => {
+    const open = panel?.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded', String(Boolean(open)));
   });
+
+  document.addEventListener('click', (event) => {
+    if (panel?.classList.contains('is-open') && !event.target.closest('.navbar')) closeMenu();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeMenu();
+  });
+
+  panel?.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
+
+  const onScroll = () => navbar?.classList.toggle('scrolled', window.scrollY > 12);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  const revealItems = document.querySelectorAll('.reveal');
+  if (reduceMotion || !('IntersectionObserver' in window)) {
+    revealItems.forEach((item) => item.classList.add('visible'));
+  } else {
+    const observer = new IntersectionObserver((entries, currentObserver) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('visible');
+        currentObserver.unobserve(entry.target);
+      });
+    }, { threshold: 0.12 });
+    revealItems.forEach((item) => observer.observe(item));
+  }
 
   document.querySelectorAll('.faq-item').forEach((item) => {
     const button = item.querySelector('.faq-question');
-    if (!button) return;
-
-    button.addEventListener('click', () => {
+    button?.addEventListener('click', () => {
+      const willOpen = !item.classList.contains('active');
       document.querySelectorAll('.faq-item').forEach((faq) => {
-        if (faq !== item) {
-          faq.classList.remove('active');
-        }
+        faq.classList.remove('active');
+        faq.querySelector('.faq-question')?.setAttribute('aria-expanded', 'false');
       });
-      item.classList.toggle('active');
+      if (willOpen) {
+        item.classList.add('active');
+        button.setAttribute('aria-expanded', 'true');
+      }
     });
   });
 
-  const handleScroll = () => {
-    if (navBar) {
-      navBar.classList.toggle('scrolled', window.scrollY > 16);
-    }
-    setActiveNav();
-  };
-
-  window.addEventListener('scroll', handleScroll, { passive: true });
-  handleScroll();
-
-  if (contactForm) {
-    contactForm.addEventListener('submit', (event) => {
+  document.querySelectorAll('.contact-form').forEach((form) => {
+    form.addEventListener('submit', (event) => {
       event.preventDefault();
-      const name = contactForm.querySelector('#name');
-      const email = contactForm.querySelector('#email');
-      const message = contactForm.querySelector('#message');
-      const button = contactForm.querySelector('button[type="submit"]');
-
-      if (!name || !email || !message) return;
-
-      const isValid = name.value.trim() && email.value.trim() && message.value.trim();
-      const validEmail = /.+@.+\..+/.test(email.value.trim());
-
-      if (!isValid || !validEmail) {
-        if (formStatus) {
-          formStatus.textContent = 'Please complete all fields with a valid email address.';
-          formStatus.className = 'form-status error';
+      const status = form.querySelector('.form-status');
+      const submit = form.querySelector('[type="submit"]');
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        if (status) {
+          status.textContent = 'Please complete the required fields.';
+          status.className = 'form-status error';
         }
         return;
       }
-
-      if (button) {
-        button.classList.add('is-loading');
-        button.disabled = true;
+      if (submit) {
+        submit.disabled = true;
+        submit.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Sending';
       }
-
-      if (formStatus) {
-        formStatus.textContent = 'Sending your message...';
-        formStatus.className = 'form-status loading';
-      }
-
       window.setTimeout(() => {
-        if (button) {
-          button.classList.remove('is-loading');
-          button.disabled = false;
+        if (status) {
+          status.textContent = 'Thanks — your enquiry is ready for our team. We’ll be in touch shortly.';
+          status.className = 'form-status success';
         }
-        if (formStatus) {
-          formStatus.textContent = 'Thanks — your message has been prepared for follow-up.';
-          formStatus.className = 'form-status success';
+        form.reset();
+        if (submit) {
+          submit.disabled = false;
+          submit.innerHTML = 'Send enquiry <i class="fas fa-arrow-right"></i>';
         }
-        contactForm.reset();
-      }, 900);
+      }, 700);
     });
-  }
-});
+  });
 
+  document.querySelectorAll('[data-year]').forEach((item) => { item.textContent = new Date().getFullYear(); });
+});
