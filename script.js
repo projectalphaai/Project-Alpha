@@ -17,29 +17,48 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (event) => {
     if (panel?.classList.contains('is-open') && !event.target.closest('.navbar')) closeMenu();
   });
-
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closeMenu();
   });
-
   panel?.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
 
-  const onScroll = () => navbar?.classList.toggle('scrolled', window.scrollY > 12);
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+  let ticking = false;
+  const updateNavbar = () => {
+    navbar?.classList.toggle('scrolled', window.scrollY > 16);
+    ticking = false;
+  };
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(updateNavbar);
+      ticking = true;
+    }
+  }, { passive: true });
+  updateNavbar();
 
   const revealItems = document.querySelectorAll('.reveal');
-  if (reduceMotion || !('IntersectionObserver' in window)) {
+  revealItems.forEach((item, index) => {
+    item.dataset.aos = 'fade-up';
+    item.dataset.aosDuration = '700';
+    item.dataset.aosDelay = String(Math.min((index % 4) * 60, 180));
+  });
+
+  if (reduceMotion) {
     revealItems.forEach((item) => item.classList.add('visible'));
   } else {
-    const observer = new IntersectionObserver((entries, currentObserver) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('visible');
-        currentObserver.unobserve(entry.target);
-      });
-    }, { threshold: 0.12 });
-    revealItems.forEach((item) => observer.observe(item));
+    const aosStyles = document.createElement('link');
+    aosStyles.rel = 'stylesheet';
+    aosStyles.href = 'https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css';
+    document.head.appendChild(aosStyles);
+
+    const aosScript = document.createElement('script');
+    aosScript.src = 'https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js';
+    aosScript.defer = true;
+    aosScript.onload = () => window.AOS?.init({ once: true, offset: 48, duration: 700, easing: 'ease-out-cubic' });
+    aosScript.onerror = () => revealItems.forEach((item) => item.classList.add('visible'));
+    document.body.appendChild(aosScript);
+    window.setTimeout(() => {
+      if (!window.AOS) revealItems.forEach((item) => item.classList.add('visible'));
+    }, 3000);
   }
 
   document.querySelectorAll('.faq-item').forEach((item) => {
@@ -58,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.querySelectorAll('.contact-form').forEach((form) => {
-    form.addEventListener('submit', (event) => {
+    form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const status = form.querySelector('.form-status');
       const submit = form.querySelector('[type="submit"]');
@@ -70,21 +89,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return;
       }
+
+      const endpoint = form.getAttribute('action') || '';
+      if (endpoint.includes('YOUR_FORM_ID')) {
+        if (status) {
+          status.textContent = 'Formspree setup required: replace YOUR_FORM_ID in contact.html before launch.';
+          status.className = 'form-status error';
+        }
+        return;
+      }
+
       if (submit) {
         submit.disabled = true;
         submit.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Sending';
       }
-      window.setTimeout(() => {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST', body: new FormData(form), headers: { Accept: 'application/json' }
+        });
+        if (!response.ok) throw new Error('Form submission failed');
+        form.reset();
         if (status) {
-          status.textContent = 'Thanks — your enquiry is ready for our team. We’ll be in touch shortly.';
+          status.textContent = 'Thanks - your enquiry has been sent. We will be in touch shortly.';
           status.className = 'form-status success';
         }
-        form.reset();
+      } catch {
+        if (status) {
+          status.textContent = 'We could not send your message. Please email hello@projectalpha.ai.';
+          status.className = 'form-status error';
+        }
+      } finally {
         if (submit) {
           submit.disabled = false;
           submit.innerHTML = 'Send enquiry <i class="fas fa-arrow-right"></i>';
         }
-      }, 700);
+      }
     });
   });
 
