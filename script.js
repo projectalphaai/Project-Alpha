@@ -56,8 +56,16 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!entry.isIntersecting) return;
 
         const element = entry.target;
-        const target = Number(element.dataset.target || 0);
+        const rawTarget = element.dataset.target;
+        const target = rawTarget !== undefined ? Number(rawTarget) : NaN;
         const suffix = element.dataset.suffix || '';
+
+        if (!Number.isFinite(target)) {
+          element.textContent = element.textContent.trim();
+          observer.unobserve(element);
+          return;
+        }
+
         const duration = 1400;
         const startTime = performance.now();
 
