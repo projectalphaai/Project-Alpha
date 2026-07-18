@@ -31,38 +31,25 @@ document.addEventListener('DOMContentLoaded', () => {
   progress.setAttribute('aria-hidden', 'true');
   document.body.prepend(progress);
 
-  if (!sessionStorage.getItem('alpha-loaded')) {
+  if (!sessionStorage.getItem('alpha-splash-seen')) {
     const loader = document.createElement('div');
     loader.className = 'site-loader';
-    loader.innerHTML = '<div class="loader-mark"><i class="fas fa-sparkles"></i></div><span>Project Alpha AI</span>';
+    loader.classList.toggle('is-alpha-splash', document.body.classList.contains('home-page'));
+    loader.innerHTML = document.body.classList.contains('home-page')
+      ? '<div class="splash-alpha-mark" aria-hidden="true"><span class="splash-alpha-ring"></span><span class="splash-alpha-ring"></span><span class="splash-alpha-ring"></span><strong>A</strong></div><div class="splash-wordmark"><strong>PROJECT ALPHA</strong><span>Intelligence, orchestrated</span></div><div class="splash-line" aria-hidden="true"><i></i></div>'
+      : '<div class="splash-orbit" aria-hidden="true"><span></span><span></span><span></span><div class="loader-mark"><i class="fas fa-wave-square"></i></div></div><div class="splash-wordmark"><strong>PROJECT ALPHA</strong><span>Initializing intelligence</span></div><div class="splash-line" aria-hidden="true"><i></i></div>';
     loader.setAttribute('aria-hidden', 'true');
     document.body.prepend(loader);
     const dismissLoader = () => {
       loader.classList.add('is-hidden');
-      sessionStorage.setItem('alpha-loaded', 'true');
-      window.setTimeout(() => loader.remove(), 600);
+      sessionStorage.setItem('alpha-splash-seen', 'true');
+      window.setTimeout(() => loader.remove(), 750);
     };
     window.addEventListener('load', dismissLoader, { once: true });
-    window.setTimeout(dismissLoader, 900);
+    window.setTimeout(dismissLoader, reduceMotion ? 150 : 1450);
   }
 
-  const savedTheme = localStorage.getItem('alpha-theme');
-  const preferredLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-  root.dataset.theme = savedTheme || (preferredLight ? 'light' : 'dark');
-  const themeButton = document.createElement('button');
-  themeButton.className = 'theme-toggle';
-  themeButton.type = 'button';
-  themeButton.setAttribute('aria-label', 'Switch color theme');
-  const updateThemeIcon = () => {
-    themeButton.innerHTML = root.dataset.theme === 'light' ? '<i class="fas fa-moon"></i>' : '<i class="fas fa-sun"></i>';
-  };
-  updateThemeIcon();
-  themeButton.addEventListener('click', () => {
-    root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
-    localStorage.setItem('alpha-theme', root.dataset.theme);
-    updateThemeIcon();
-  });
-  navbar?.insertBefore(themeButton, toggle || panel);
+  root.dataset.theme = 'dark';
 
   // Surface Phase 2 destinations throughout the existing site without duplicating markup.
   document.querySelectorAll('.footer-col').forEach((column) => {
@@ -151,17 +138,32 @@ document.addEventListener('DOMContentLoaded', () => {
     counters.forEach((counter) => counterObserver.observe(counter));
   }
 
-  // Pointer-driven glass tilt is limited to precise pointing devices.
-  if (!reduceMotion && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    document.querySelectorAll('.card, .dashboard').forEach((card) => {
-      card.addEventListener('pointermove', (event) => {
-        const box = card.getBoundingClientRect();
-        const x = (event.clientX - box.left) / box.width - .5;
-        const y = (event.clientY - box.top) / box.height - .5;
-        card.style.setProperty('--rx', `${-y * 4}deg`);
-        card.style.setProperty('--ry', `${x * 5}deg`);
+  // Homepage-only depth follows precise pointers and updates at most once per frame.
+  const commandVisual = document.querySelector('.home-page .hero-visual');
+  const commandCenter = commandVisual?.querySelector('.command-center');
+  if (commandVisual && commandCenter && !reduceMotion && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    let depthFrame = 0;
+    const updateDepth = (event) => {
+      if (depthFrame) return;
+      depthFrame = window.requestAnimationFrame(() => {
+        const bounds = commandVisual.getBoundingClientRect();
+        const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+        const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
+        commandCenter.style.setProperty('--depth-x', `${((x - .5) * 4).toFixed(2)}deg`);
+        commandCenter.style.setProperty('--depth-y', `${((.5 - y) * 3).toFixed(2)}deg`);
+        commandCenter.style.setProperty('--light-x', `${(x * 100).toFixed(1)}%`);
+        commandCenter.style.setProperty('--light-y', `${(y * 100).toFixed(1)}%`);
+        depthFrame = 0;
       });
-      card.addEventListener('pointerleave', () => { card.style.removeProperty('--rx'); card.style.removeProperty('--ry'); });
+    };
+    commandVisual.addEventListener('pointermove', updateDepth, { passive: true });
+    commandVisual.addEventListener('pointerleave', () => {
+      if (depthFrame) window.cancelAnimationFrame(depthFrame);
+      depthFrame = 0;
+      commandCenter.style.removeProperty('--depth-x');
+      commandCenter.style.removeProperty('--depth-y');
+      commandCenter.style.removeProperty('--light-x');
+      commandCenter.style.removeProperty('--light-y');
     });
   }
 
@@ -199,4 +201,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }));
 
   document.querySelectorAll('[data-year]').forEach((item) => { item.textContent = new Date().getFullYear(); });
+
+  // GSAP is an optional homepage enhancement; CSS remains the complete fallback.
+  if (document.body.classList.contains('home-page') && window.gsap && !reduceMotion) {
+    const gsap = window.gsap;
+    const splashWasSeen = sessionStorage.getItem('alpha-splash-seen') === 'true';
+    document.querySelectorAll('.command-hero .reveal').forEach((item) => item.classList.add('visible'));
+
+    gsap.timeline({ delay: splashWasSeen ? .08 : 1.05, defaults: { ease: 'power3.out' } })
+      .fromTo('.command-hero .eyebrow', { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: .55 })
+      .fromTo('.command-hero h1', { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: .9 }, '-=.28')
+      .fromTo('.command-hero .hero-copy > p', { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: .7 }, '-=.55')
+      .fromTo('.command-hero .hero-actions, .command-hero .hero-trust', { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .65, stagger: .1 }, '-=.42')
+      .fromTo('.command-center', { autoAlpha: 0, scale: .965, y: 24 }, { autoAlpha: 1, scale: 1, y: 0, duration: 1.05 }, '-=.9')
+      .fromTo('.command-center .command-node, .command-center .signal-card, .command-center .approval-card', { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: .5, stagger: .07 }, '-=.42')
+      .fromTo('.command-float', { autoAlpha: 0, scale: .92 }, { autoAlpha: 1, scale: 1, duration: .5, stagger: .12 }, '-=.25');
+
+    gsap.to('.alpha-core-shell', { y: -3, duration: 2.4, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+    gsap.to('.alpha-atmosphere span', {
+      y: 'random(-18, 18)', x: 'random(-10, 10)', opacity: 'random(.18, .65)',
+      duration: 'random(3.5, 6.5)', repeat: -1, yoyo: true, ease: 'sine.inOut', stagger: .15
+    });
+  }
 });
