@@ -267,3 +267,46 @@ p{color:var(--color-text-muted)}
 .home-page .section-head{position:relative}.home-page .section-head.center::after{content:"";display:block;width:72px;height:1px;margin:1.5rem auto 0;background:linear-gradient(90deg,transparent,#5b80ff,#945dff,transparent)}
 @media(max-width:820px){.home-page .logo-strip{padding-top:2rem}.home-page .logo-strip::before{top:-105px;height:190px}.home-page .logo-strip::after{top:-84px;height:150px}}
 @media(max-width:560px){.home-page .logo-strip{gap:1rem}.capability-label{font-size:.55rem;letter-spacing:.15em}.home-page .logo-strip::before{width:180vw}.home-page main>.section .card::before{width:72%}}
+/* PROJECT ALPHA — PREMIUM HERO POLISH */
+
+.command-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100vh - 90px);
+  padding-top: 7rem;
+  padding-bottom: 5rem;
+  overflow: hidden;
+}
+
+.command-hero::before {
+  content: "";
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  top: 4%;
+  right: 4%;
+  z-index: -2;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(63, 106, 255, 0.3) 0%,
+    rgba(126, 58, 242, 0.16) 38%,
+    transparent 72%
+  );
+  filter: blur(20px);
+  animation: alphaGlow 7s ease-in-out infinite alternate;
+}
+
+.command-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+
+  background-image:
+    linear-gradient(rgba(102, 126, 234, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(102, 126, 234, 0.055) 1px, transparent 1px);
+
+  background-size: 42px 42px;
+  pointer-events: none;
+}
