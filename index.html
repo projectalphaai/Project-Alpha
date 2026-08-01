@@ -194,6 +194,10 @@
                             <svg class="btn-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
                             Get Started Free
                         </a>
+                        <button type="button" class="btn btn-outline-glow" data-open-contact-modal data-contact-intent="strategy">
+                            <svg class="btn-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"/></svg>
+                            Book a strategy call
+                        </button>
                         <a href="#chatbot" class="btn btn-outline-glow">
                             <svg class="btn-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/></svg>
                             Watch Demo
@@ -488,7 +492,7 @@
                             <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> 24/7 Elite Support</li>
                             <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Advanced AI Command Center</li>
                         </ul>
-                        <a href="#cta" class="btn btn-outline-glow">Contact Sales</a>
+                        <button type="button" class="btn btn-outline-glow" data-open-contact-modal data-contact-intent="sales">Contact Sales</button>
                     </article>
                 </div>
             </div>
@@ -633,11 +637,13 @@
                     <p>Join 2,000+ creators and brands already growing with Project Alpha AI.</p>
                     <div class="cta-actions">
                         <a href="./pages/signup.html" class="btn btn-glow btn-lg">Start Free Trial</a>
+                        <button type="button" class="btn btn-outline-glow btn-lg" data-open-contact-modal data-contact-intent="strategy">Book a strategy call</button>
                         <a href="./pages/login.html" class="btn btn-outline-glow btn-lg">Log In to Dashboard</a>
                     </div>
 
                     <form class="contact-form" id="contact-form" novalidate aria-label="Contact form">
                         <h3 class="contact-form-title">Or send us a message</h3>
+                        <input type="hidden" name="_subject" value="Project Alpha — Contact form">
                         <div class="contact-grid">
                             <div class="form-field">
                                 <label for="contact-name">Name <span class="required">*</span></label>
@@ -659,7 +665,7 @@
                             <span class="btn-label">Send Message</span>
                             <span class="btn-spinner" hidden aria-hidden="true"></span>
                         </button>
-                        <div class="form-success" id="contact-success" hidden role="status">Thanks! Your message was saved. We'll be in touch soon.</div>
+                        <div class="form-success" id="contact-success" hidden role="status">Thanks! Your message was sent. We'll be in touch soon.</div>
                         <div class="form-error-banner" id="contact-error" hidden role="alert">Something went wrong. Please try again.</div>
                     </form>
                 </div>
@@ -707,6 +713,7 @@
                     <li><a href="#testimonials">Testimonials</a></li>
                     <li><a href="#faq">FAQ</a></li>
                     <li><a href="#cta">Contact</a></li>
+                    <li><button type="button" class="footer-text-btn" data-open-contact-modal data-contact-intent="strategy">Book a strategy call</button></li>
                     <li><a href="./pages/login.html">Log In</a></li>
                 </ul>
             </div>
@@ -724,6 +731,53 @@
         </div>
     </footer>
 
+    <!-- Contact / Strategy Call Modal (temporary Calendly replacement) -->
+    <div class="contact-modal" id="contact-modal" hidden aria-hidden="true">
+        <div class="contact-modal-backdrop" data-close-contact-modal tabindex="-1"></div>
+        <div class="contact-modal-dialog glass-panel" role="dialog" aria-modal="true" aria-labelledby="contact-modal-title" tabindex="-1">
+            <button type="button" class="contact-modal-close" data-close-contact-modal aria-label="Close contact form">
+                <svg viewBox="0 0 20 20" aria-hidden="true" width="20" height="20"><path fill="currentColor" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/></svg>
+            </button>
+            <div class="contact-modal-header">
+                <p class="contact-modal-eyebrow">Contact Us</p>
+                <h2 id="contact-modal-title">Book a strategy call</h2>
+                <p class="contact-modal-sub" id="contact-modal-sub">Tell us about your goals and our team will follow up to schedule a call. Calendly booking will replace this form once connected.</p>
+            </div>
+            <form class="contact-form contact-modal-form" id="modal-contact-form" novalidate>
+                <input type="hidden" name="_subject" id="modal-subject" value="Project Alpha — Strategy Call Request">
+                <input type="hidden" name="intent" id="modal-intent" value="strategy">
+                <div class="contact-grid">
+                    <div class="form-field">
+                        <label for="modal-name">Name <span class="required">*</span></label>
+                        <input type="text" id="modal-name" name="name" required autocomplete="name" maxlength="80" placeholder="Your name">
+                        <span class="field-error" id="modal-name-error" hidden>Please enter your name.</span>
+                    </div>
+                    <div class="form-field">
+                        <label for="modal-email">Email <span class="required">*</span></label>
+                        <input type="email" id="modal-email" name="email" required autocomplete="email" maxlength="120" placeholder="you@company.com">
+                        <span class="field-error" id="modal-email-error" hidden>Enter a valid email address.</span>
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label for="modal-company">Company</label>
+                    <input type="text" id="modal-company" name="company" autocomplete="organization" maxlength="120" placeholder="Company name (optional)">
+                </div>
+                <div class="form-field">
+                    <label for="modal-message">How can we help? <span class="required">*</span></label>
+                    <textarea id="modal-message" name="message" required maxlength="1000" rows="4" placeholder="Share your goals, timeline, or questions..."></textarea>
+                    <span class="field-error" id="modal-message-error" hidden>Message must be at least 10 characters.</span>
+                </div>
+                <button type="submit" class="btn btn-glow" id="modal-contact-submit">
+                    <span class="btn-label">Send request</span>
+                    <span class="btn-spinner" hidden aria-hidden="true"></span>
+                </button>
+                <div class="form-success" id="modal-contact-success" hidden role="status">Thanks! We received your request and will be in touch shortly.</div>
+                <div class="form-error-banner" id="modal-contact-error" hidden role="alert">Something went wrong. Please try again or email support@projectalpha.ai.</div>
+            </form>
+        </div>
+    </div>
+
+    <script src="./js/config.js" defer></script>
     <script src="./js/script.js" defer></script>
 </body>
 </html>

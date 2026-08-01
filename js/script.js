@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initChatbotTyping();
     initAuroraMouse();
     initContactForm();
+    initContactModal();
 });
 
 /* Loading screen fade out */
@@ -31,9 +32,9 @@ function initLoadingScreen() {
     };
 
     if (document.readyState === "complete") {
-        setTimeout(hide, 1800);
+        setTimeout(hide, 900);
     } else {
-        window.addEventListener("load", () => setTimeout(hide, 1800));
+        window.addEventListener("load", () => setTimeout(hide, 900));
     }
 }
 
@@ -643,17 +644,61 @@ function typeText(el, text, typingMsg) {
     tick();
 }
 
-/* Contact form — validate + mock submit to localStorage */
-function initContactForm() {
-    const form = document.getElementById("contact-form");
+/* ---------- Formspree + localStorage contact submit ---------- */
+function getFormspreeEndpoint() {
+    return window.PA_CONFIG?.formspreeEndpoint?.() || null;
+}
+
+function persistContactLocally(payload) {
+    const key = "pa_contact_messages";
+    const existing = JSON.parse(localStorage.getItem(key) || "[]");
+    existing.push({ id: Date.now(), ...payload, createdAt: new Date().toISOString() });
+    localStorage.setItem(key, JSON.stringify(existing));
+}
+
+async function submitContactPayload(payload) {
+    const endpoint = getFormspreeEndpoint();
+    persistContactLocally(payload);
+
+    if (!endpoint) {
+        return { ok: true, mode: "local" };
+    }
+
+    const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        const message = data?.errors?.[0]?.message || "Formspree rejected the submission.";
+        throw new Error(message);
+    }
+
+    return { ok: true, mode: "formspree" };
+}
+
+function wireContactForm(options) {
+    const {
+        formId,
+        fieldPrefix,
+        submitId,
+        successId,
+        errorId,
+        getPayload,
+        onSuccess
+    } = options;
+
+    const form = document.getElementById(formId);
     if (!form) return;
 
-    const name = document.getElementById("contact-name");
-    const email = document.getElementById("contact-email");
-    const message = document.getElementById("contact-message");
-    const submit = document.getElementById("contact-submit");
-    const success = document.getElementById("contact-success");
-    const errorBanner = document.getElementById("contact-error");
+    const submit = document.getElementById(submitId);
+    const success = document.getElementById(successId);
+    const errorBanner = document.getElementById(errorId);
 
     const showErr = (id, show) => {
         const el = document.getElementById(id);
@@ -668,12 +713,16 @@ function initContactForm() {
         if (spinner) spinner.hidden = !loading;
     };
 
-    ["contact-name", "contact-email", "contact-message"].forEach((id) => {
-        document.getElementById(id)?.addEventListener("input", () => {
-            document.getElementById(id)?.classList.remove("invalid");
-            showErr(id + "-error", false);
-            if (errorBanner) errorBanner.hidden = true;
+    const clearFieldErrors = () => {
+        form.querySelectorAll(".invalid").forEach((el) => el.classList.remove("invalid"));
+        form.querySelectorAll(".field-error").forEach((el) => {
+            el.hidden = true;
         });
+        if (errorBanner) errorBanner.hidden = true;
+    };
+
+    form.querySelectorAll("input, textarea").forEach((input) => {
+        input.addEventListener("input", clearFieldErrors);
     });
 
     form.addEventListener("submit", async (e) => {
@@ -681,59 +730,173 @@ function initContactForm() {
         if (success) success.hidden = true;
         if (errorBanner) errorBanner.hidden = true;
 
+        const nameEl = document.getElementById(`${fieldPrefix}-name`);
+        const emailEl = document.getElementById(`${fieldPrefix}-email`);
+        const messageEl = document.getElementById(`${fieldPrefix}-message`);
+
         let valid = true;
-        const nameVal = (name?.value || "").trim();
-        const emailVal = (email?.value || "").trim();
-        const messageVal = (message?.value || "").trim();
+        const nameVal = (nameEl?.value || "").trim();
+        const emailVal = (emailEl?.value || "").trim();
+        const messageVal = (messageEl?.value || "").trim();
 
         if (nameVal.length < 2) {
-            showErr("contact-name-error", true);
-            name?.classList.add("invalid");
+            showErr(`${fieldPrefix}-name-error`, true);
+            nameEl?.classList.add("invalid");
             valid = false;
         }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
-            showErr("contact-email-error", true);
-            email?.classList.add("invalid");
+            showErr(`${fieldPrefix}-email-error`, true);
+            emailEl?.classList.add("invalid");
             valid = false;
         }
         if (messageVal.length < 10) {
-            showErr("contact-message-error", true);
-            message?.classList.add("invalid");
+            showErr(`${fieldPrefix}-message-error`, true);
+            messageEl?.classList.add("invalid");
             valid = false;
         }
 
         if (!valid) return;
 
         setLoading(true);
-        await new Promise((r) => setTimeout(r, 900));
-
         try {
-            const key = "pa_contact_messages";
-            const existing = JSON.parse(localStorage.getItem(key) || "[]");
-            existing.push({
-                id: Date.now(),
+            await submitContactPayload(getPayload({
                 name: nameVal,
                 email: emailVal,
-                message: messageVal,
-                createdAt: new Date().toISOString()
-            });
-            localStorage.setItem(key, JSON.stringify(existing));
+                message: messageVal
+            }));
             form.reset();
             if (success) {
                 success.hidden = false;
                 success.focus?.();
             }
-        } catch {
-            if (errorBanner) errorBanner.hidden = false;
+            onSuccess?.();
+            setTimeout(() => {
+                if (success) success.hidden = true;
+            }, 5000);
+        } catch (err) {
+            if (errorBanner) {
+                errorBanner.textContent = err?.message || "Something went wrong. Please try again.";
+                errorBanner.hidden = false;
+            }
         } finally {
             setLoading(false);
-            if (success && !success.hidden) {
-                setTimeout(() => {
-                    success.hidden = true;
-                }, 5000);
-            }
         }
     });
+}
+
+/* Contact form — validate + Formspree (with localStorage backup) */
+function initContactForm() {
+    wireContactForm({
+        formId: "contact-form",
+        fieldPrefix: "contact",
+        submitId: "contact-submit",
+        successId: "contact-success",
+        errorId: "contact-error",
+        getPayload: ({ name, email, message }) => ({
+            name,
+            email,
+            message,
+            _subject: "Project Alpha — Contact form",
+            source: "landing-contact"
+        })
+    });
+}
+
+/* Contact modal — temporary replacement for Calendly */
+function initContactModal() {
+    const modal = document.getElementById("contact-modal");
+    if (!modal) return;
+
+    const dialog = modal.querySelector(".contact-modal-dialog");
+    const title = document.getElementById("contact-modal-title");
+    const subtitle = document.getElementById("contact-modal-sub");
+    const subject = document.getElementById("modal-subject");
+    const intentInput = document.getElementById("modal-intent");
+    let lastFocus = null;
+
+    const copy = {
+        strategy: {
+            title: "Book a strategy call",
+            sub: "Tell us about your goals and our team will follow up to schedule a call. Calendly booking will replace this form once connected."
+        },
+        sales: {
+            title: "Talk to sales",
+            sub: "Share your requirements and we’ll help you choose the right Project Alpha plan for your team."
+        },
+        general: {
+            title: "Contact us",
+            sub: "Send a message and we’ll get back to you shortly."
+        }
+    };
+
+    const openModal = (intent = "strategy") => {
+        const meta = copy[intent] || copy.general;
+        lastFocus = document.activeElement;
+        if (title) title.textContent = meta.title;
+        if (subtitle) subtitle.textContent = meta.sub;
+        if (subject) {
+            subject.value = intent === "sales"
+                ? "Project Alpha — Sales Inquiry"
+                : "Project Alpha — Strategy Call Request";
+        }
+        if (intentInput) intentInput.value = intent;
+
+        modal.hidden = false;
+        modal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("modal-open");
+        requestAnimationFrame(() => modal.classList.add("is-open"));
+        dialog?.focus();
+    };
+
+    const closeModal = () => {
+        modal.classList.remove("is-open");
+        document.body.classList.remove("modal-open");
+        modal.setAttribute("aria-hidden", "true");
+        setTimeout(() => {
+            modal.hidden = true;
+            lastFocus?.focus?.();
+        }, 200);
+    };
+
+    document.querySelectorAll("[data-open-contact-modal]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            openModal(btn.getAttribute("data-contact-intent") || "strategy");
+        });
+    });
+
+    modal.querySelectorAll("[data-close-contact-modal]").forEach((el) => {
+        el.addEventListener("click", closeModal);
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !modal.hidden) closeModal();
+    });
+
+    wireContactForm({
+        formId: "modal-contact-form",
+        fieldPrefix: "modal",
+        submitId: "modal-contact-submit",
+        successId: "modal-contact-success",
+        errorId: "modal-contact-error",
+        getPayload: ({ name, email, message }) => {
+            const company = (document.getElementById("modal-company")?.value || "").trim();
+            const intent = intentInput?.value || "strategy";
+            return {
+                name,
+                email,
+                company,
+                message,
+                intent,
+                _subject: subject?.value || "Project Alpha — Contact",
+                source: "contact-modal"
+            };
+        },
+        onSuccess: () => {
+            setTimeout(closeModal, 2200);
+        }
+    });
+
+    window.PA_openContactModal = openModal;
 }
 
 /* Aurora subtle mouse interaction — uses CSS vars so keyframes keep running */
