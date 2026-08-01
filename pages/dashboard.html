@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Project Alpha AI Dashboard — Manage your social media automation, analytics, and AI tools.">
+    <meta name="robots" content="noindex, follow">
+    <meta name="theme-color" content="#030712">
+    <title>Dashboard — Project Alpha AI</title>
+    <link rel="icon" type="image/svg+xml" href="../img/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"></noscript>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body class="dashboard-body">
+    <a href="#dashboard" class="skip-link">Skip to main content</a>
+    <div class="aurora-bg" aria-hidden="true">
+        <div class="aurora aurora-1"></div>
+        <div class="aurora aurora-2"></div>
+        <div class="aurora aurora-3"></div>
+    </div>
+    <canvas id="dash-particle-canvas" class="dash-particle-canvas" aria-hidden="true"></canvas>
+
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <div class="sidebar-overlay" id="sidebar-overlay" hidden></div>
+
+    <div class="dashboard-container">
+        <aside class="sidebar glass-panel" id="sidebar">
+            <div class="sidebar-top">
+                <a href="../index.html" class="sidebar-logo">
+                    <svg class="logo-icon" viewBox="0 0 32 32" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="dashLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#3b82f6"/>
+                                <stop offset="100%" stop-color="#8b5cf6"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="16" cy="16" r="14" fill="url(#dashLogoGrad)" opacity="0.2"/>
+                        <circle cx="16" cy="16" r="4" fill="url(#dashLogoGrad)"/>
+                    </svg>
+                    <span><span class="ai-logo-gradient">Project Alpha</span></span>
+                </a>
+                <button class="sidebar-close" id="sidebar-close" aria-label="Close sidebar" type="button">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/></svg>
+                </button>
+            </div>
+            <nav class="sidebar-nav" aria-label="Dashboard navigation">
+                <ul>
+                    <li>
+                        <a href="#dashboard" class="active" data-section="dashboard">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#calendar" data-section="calendar">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M6 2a1 1 0 00-2 0v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2h-1V2a1 1 0 10-2 0v1H7V2a1 1 0 00-1-1zM4 7h12v8H4V7z"/></svg>
+                            Content Calendar
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#schedule" data-section="schedule">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/></svg>
+                            Schedule Post
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#connect" class="dropdown-toggle" data-section="connect">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg>
+                            Connect Pages
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#instagram" data-section="connect">Instagram</a></li>
+                            <li><a href="#facebook" data-section="connect">Facebook</a></li>
+                            <li><a href="#linkedin" data-section="connect">LinkedIn</a></li>
+                            <li><a href="#x" data-section="connect">X (Twitter)</a></li>
+                            <li><a href="#youtube" data-section="connect">YouTube</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#ai-tools" class="dropdown-toggle" data-section="ai-tools">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z"/></svg>
+                            AI Tools
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#ai-caption" data-section="ai-tools">AI Caption Generator</a></li>
+                            <li><a href="#ai-hashtag" data-section="ai-tools">AI Hashtag Generator</a></li>
+                            <li><a href="#ai-post-idea" data-section="ai-tools">AI Post Idea Generator</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#ai-agents" data-section="ai-agents">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M13 7H7v6h6V7z"/><path fill="currentColor" fill-rule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zm0 4v8h6V6H7z" clip-rule="evenodd"/></svg>
+                            AI Agents
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#leads" data-section="leads">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+                            Leads
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#crm" data-section="crm">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M3 4a1 1 0 011-1h3a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm7-1a1 1 0 00-1 1v12a1 1 0 001 1h3a1 1 0 001-1V4a1 1 0 00-1-1h-3zm6 0a1 1 0 00-1 1v12a1 1 0 001 1h2a1 1 0 001-1V4a1 1 0 00-1-1h-2z"/></svg>
+                            CRM Pipeline
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#analytics" data-section="analytics">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+                            Analytics
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#inbox" data-section="inbox">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path fill="currentColor" d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+                            Inbox
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#settings" data-section="settings">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+                            Settings
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <button type="button" class="btn btn-outline-glow btn-sm" id="logout-btn" aria-label="Log out of Project Alpha">
+                    <svg class="btn-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h6a1 1 0 100-2H4V5h5a1 1 0 000-2H3zm11.293 3.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L15.586 11H9a1 1 0 110-2h6.586l-1.293-1.293a1 1 0 010-1.414z"/></svg>
+                    Log Out
+                </button>
+                <a href="../index.html" class="btn btn-outline-glow btn-sm">
+                    <svg class="btn-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"/></svg>
+                    Back to Home
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="dash-header glass-panel">
+                <div class="dash-header-left">
+                    <button class="menu-toggle" id="menu-toggle" aria-label="Open sidebar" type="button">
+                        <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/></svg>
+                    </button>
+                    <div>
+                        <h1 class="dash-title" id="dash-title">Dashboard</h1>
+                        <p class="dash-subtitle" id="dash-subtitle">Welcome back — here's your automation overview</p>
+                    </div>
+                </div>
+                <div class="user-profile">
+                    <span id="user-greeting">Welcome!</span>
+                    <img src="../img/avatar.svg" alt="User avatar" width="40" height="40" id="user-avatar">
+                </div>
+            </header>
+
+            <!-- Overview -->
+            <section id="dashboard" class="dashboard-section active" aria-labelledby="overview-heading">
+                <h2 id="overview-heading" class="sr-only">Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card glass-panel">
+                        <div class="stat-card-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                        </div>
+                        <h3>Total Posts</h3>
+                        <p class="stat-value" data-count="1250" data-format="comma">0</p>
+                        <span class="stat-change positive">+12% this month</span>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-card-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                        </div>
+                        <h3>Scheduled Posts</h3>
+                        <p class="stat-value" id="scheduled-count" data-count="35">0</p>
+                        <span class="stat-change">Next in 2h</span>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-card-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+                        </div>
+                        <h3>Engagement Rate</h3>
+                        <p class="stat-value" data-count="7.2" data-suffix="%" data-decimals="1">0%</p>
+                        <span class="stat-change positive">+0.8%</span>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-card-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                        </div>
+                        <h3>New Followers</h3>
+                        <p class="stat-value" data-count="230" data-prefix="+">+0</p>
+                        <span class="stat-change positive">+18% this week</span>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-card glass-panel is-loading" data-chart-card="postPerformanceChart">
+                        <h3>Post Performance</h3>
+                        <div class="chart-skeleton" aria-hidden="true">
+                            <div class="skeleton-bar"></div>
+                            <div class="skeleton-bar"></div>
+                            <div class="skeleton-bar"></div>
+                            <div class="skeleton-bar"></div>
+                        </div>
+                        <div class="chart-error" hidden role="alert">Charts unavailable. Check your connection and refresh.</div>
+                        <div class="chart-wrapper">
+                            <canvas id="postPerformanceChart" aria-label="Post performance chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card glass-panel is-loading" data-chart-card="audienceGrowthChart">
+                        <h3>Audience Growth</h3>
+                        <div class="chart-skeleton" aria-hidden="true">
+                            <div class="skeleton-line"></div>
+                        </div>
+                        <div class="chart-error" hidden role="alert">Charts unavailable. Check your connection and refresh.</div>
+                        <div class="chart-wrapper">
+                            <canvas id="audienceGrowthChart" aria-label="Audience growth chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Content Calendar -->
+            <section id="calendar" class="dashboard-section" aria-labelledby="calendar-heading">
+                <h2 id="calendar-heading">Content Calendar</h2>
+                <div class="calendar-app glass-panel">
+                    <div class="calendar-toolbar">
+                        <button type="button" class="cal-nav-btn" id="cal-prev" aria-label="Previous month">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"/></svg>
+                        </button>
+                        <h3 class="calendar-month-label" id="cal-month-label">August 2026</h3>
+                        <button type="button" class="cal-nav-btn" id="cal-next" aria-label="Next month">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
+                        </button>
+                        <button type="button" class="btn btn-outline-glow btn-sm" id="cal-today">Today</button>
+                    </div>
+                    <div class="calendar-weekdays" aria-hidden="true">
+                        <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                    </div>
+                    <div class="calendar-grid" id="calendar-grid" role="grid" aria-label="Month calendar"></div>
+                    <div class="calendar-events" id="calendar-events">
+                        <h4>Scheduled this month</h4>
+                        <ul class="event-list" id="event-list"></ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Schedule Post -->
+            <section id="schedule" class="dashboard-section" aria-labelledby="schedule-heading">
+                <h2 id="schedule-heading">Schedule Post</h2>
+                <form class="post-scheduler glass-panel" id="schedule-form" novalidate>
+                    <div class="form-field">
+                        <label for="post-content">Post content <span class="required">*</span></label>
+                        <textarea id="post-content" name="content" placeholder="Write your post content..." maxlength="2200" required></textarea>
+                        <span class="field-hint"><span id="content-count">0</span>/2200</span>
+                        <span class="field-error" id="content-error" hidden>Please enter post content (at least 10 characters).</span>
+                    </div>
+                    <div class="form-field">
+                        <label for="post-platform">Platform <span class="required">*</span></label>
+                        <select id="post-platform" name="platform" required>
+                            <option value="">Select Platform</option>
+                            <option value="instagram">Instagram</option>
+                            <option value="facebook">Facebook</option>
+                            <option value="linkedin">LinkedIn</option>
+                            <option value="x">X (Twitter)</option>
+                            <option value="youtube">YouTube</option>
+                        </select>
+                        <span class="field-error" id="platform-error" hidden>Please select a platform.</span>
+                    </div>
+                    <div class="form-field">
+                        <label for="post-datetime">Date &amp; time <span class="required">*</span></label>
+                        <input type="datetime-local" id="post-datetime" name="datetime" required>
+                        <span class="field-error" id="datetime-error" hidden>Please choose a future date and time.</span>
+                    </div>
+                    <div class="form-field">
+                        <label for="post-media">Media URL <span class="optional">(optional)</span></label>
+                        <input type="url" id="post-media" name="media" placeholder="https://example.com/image.jpg">
+                        <span class="field-error" id="media-error" hidden>Enter a valid URL starting with http:// or https://</span>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-glow" id="schedule-submit">
+                            <span class="btn-label">Schedule Post</span>
+                            <span class="btn-spinner" hidden aria-hidden="true"></span>
+                        </button>
+                    </div>
+                    <div class="form-success" id="schedule-success" hidden role="status">
+                        Post scheduled successfully!
+                    </div>
+                </form>
+            </section>
+
+            <!-- Connect Pages -->
+            <section id="connect" class="dashboard-section" aria-labelledby="connect-heading">
+                <h2 id="connect-heading">Connect Social Media Pages</h2>
+                <p class="section-lead">Connect your accounts to schedule and publish across platforms. Status is saved in this browser.</p>
+                <div class="connect-grid" id="connect-grid">
+                    <div class="connect-card glass-panel" id="instagram" data-platform="instagram">
+                        <img src="../img/instagram.svg" alt="" width="32" height="32">
+                        <h3>Instagram</h3>
+                        <span class="connect-status" data-status>Not connected</span>
+                        <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                    </div>
+                    <div class="connect-card glass-panel" id="facebook" data-platform="facebook">
+                        <img src="../img/facebook.svg" alt="" width="32" height="32">
+                        <h3>Facebook</h3>
+                        <span class="connect-status" data-status>Not connected</span>
+                        <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                    </div>
+                    <div class="connect-card glass-panel" id="linkedin" data-platform="linkedin">
+                        <img src="../img/linkedin.svg" alt="" width="32" height="32">
+                        <h3>LinkedIn</h3>
+                        <span class="connect-status" data-status>Not connected</span>
+                        <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                    </div>
+                    <div class="connect-card glass-panel" id="x" data-platform="x">
+                        <img src="../img/x.svg" alt="" width="32" height="32">
+                        <h3>X (Twitter)</h3>
+                        <span class="connect-status" data-status>Not connected</span>
+                        <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                    </div>
+                    <div class="connect-card glass-panel" id="youtube" data-platform="youtube">
+                        <img src="../img/youtube.svg" alt="" width="32" height="32">
+                        <h3>YouTube</h3>
+                        <span class="connect-status" data-status>Not connected</span>
+                        <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI Tools -->
+            <section id="ai-tools" class="dashboard-section" aria-labelledby="ai-tools-heading">
+                <h2 id="ai-tools-heading">AI Tools</h2>
+                <p class="section-lead">Generate captions, hashtags, and post ideas with mock AI — no API key required.</p>
+                <div class="ai-tool-grid">
+                    <div class="ai-tool-card glass-panel" id="ai-caption" data-tool="caption">
+                        <h3>AI Caption Generator</h3>
+                        <label class="sr-only" for="caption-input">Caption topic</label>
+                        <textarea id="caption-input" placeholder="Enter keywords or topic..." maxlength="500"></textarea>
+                        <span class="field-error" data-error hidden>Enter a topic to generate a caption.</span>
+                        <button type="button" class="btn btn-glow btn-sm generate-btn">
+                            <span class="btn-label">Generate Caption</span>
+                            <span class="btn-spinner" hidden aria-hidden="true"></span>
+                        </button>
+                        <div class="generated-output" data-output tabindex="0">Generated content will appear here...</div>
+                        <button type="button" class="btn-copy" data-copy hidden>Copy</button>
+                    </div>
+                    <div class="ai-tool-card glass-panel" id="ai-hashtag" data-tool="hashtag">
+                        <h3>AI Hashtag Generator</h3>
+                        <label class="sr-only" for="hashtag-input">Post content for hashtags</label>
+                        <textarea id="hashtag-input" placeholder="Enter post content or niche..." maxlength="500"></textarea>
+                        <span class="field-error" data-error hidden>Enter content to generate hashtags.</span>
+                        <button type="button" class="btn btn-glow btn-sm generate-btn">
+                            <span class="btn-label">Generate Hashtags</span>
+                            <span class="btn-spinner" hidden aria-hidden="true"></span>
+                        </button>
+                        <div class="generated-output" data-output tabindex="0">Generated hashtags will appear here...</div>
+                        <button type="button" class="btn-copy" data-copy hidden>Copy</button>
+                    </div>
+                    <div class="ai-tool-card glass-panel" id="ai-post-idea" data-tool="post-idea">
+                        <h3>AI Post Idea Generator</h3>
+                        <label class="sr-only" for="idea-input">Niche or brand theme</label>
+                        <textarea id="idea-input" placeholder="Describe your niche, brand, or campaign theme..." maxlength="500"></textarea>
+                        <span class="field-error" data-error hidden>Enter a niche or theme to generate ideas.</span>
+                        <button type="button" class="btn btn-glow btn-sm generate-btn">
+                            <span class="btn-label">Generate Ideas</span>
+                            <span class="btn-spinner" hidden aria-hidden="true"></span>
+                        </button>
+                        <div class="generated-output" data-output tabindex="0">Generated post ideas will appear here...</div>
+                        <button type="button" class="btn-copy" data-copy hidden>Copy</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI Agents -->
+            <section id="ai-agents" class="dashboard-section" aria-labelledby="ai-agents-heading">
+                <h2 id="ai-agents-heading">AI Agents</h2>
+                <p class="section-lead">Activate specialist agents and run simulated tasks for your demo workflow.</p>
+                <div class="agents-grid" id="agents-grid">
+                    <article class="agent-card glass-panel" data-agent="content-writer">
+                        <div class="agent-header">
+                            <h3>Content Writer</h3>
+                            <span class="agent-badge" data-agent-status>Idle</span>
+                        </div>
+                        <p>Draft on-brand captions and post drafts from a short brief.</p>
+                        <label class="sr-only" for="agent-input-content-writer">Brief for Content Writer</label>
+                        <textarea id="agent-input-content-writer" placeholder="Brief: product launch for creators..." maxlength="400"></textarea>
+                        <div class="agent-actions">
+                            <button type="button" class="btn btn-outline-glow btn-sm" data-agent-activate>Activate</button>
+                            <button type="button" class="btn btn-glow btn-sm" data-agent-run disabled>
+                                <span class="btn-label">Run Agent</span>
+                                <span class="btn-spinner" hidden aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="agent-output" data-agent-output tabindex="0">Activate the agent, then run a task.</div>
+                    </article>
+                    <article class="agent-card glass-panel" data-agent="hashtag-strategist">
+                        <div class="agent-header">
+                            <h3>Hashtag Strategist</h3>
+                            <span class="agent-badge" data-agent-status>Idle</span>
+                        </div>
+                        <p>Build a mix of reach, niche, and brand hashtags.</p>
+                        <label class="sr-only" for="agent-input-hashtag-strategist">Topic for Hashtag Strategist</label>
+                        <textarea id="agent-input-hashtag-strategist" placeholder="Topic or niche..." maxlength="400"></textarea>
+                        <div class="agent-actions">
+                            <button type="button" class="btn btn-outline-glow btn-sm" data-agent-activate>Activate</button>
+                            <button type="button" class="btn btn-glow btn-sm" data-agent-run disabled>
+                                <span class="btn-label">Run Agent</span>
+                                <span class="btn-spinner" hidden aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="agent-output" data-agent-output tabindex="0">Activate the agent, then run a task.</div>
+                    </article>
+                    <article class="agent-card glass-panel" data-agent="analytics-advisor">
+                        <div class="agent-header">
+                            <h3>Analytics Advisor</h3>
+                            <span class="agent-badge" data-agent-status>Idle</span>
+                        </div>
+                        <p>Summarize performance and suggest next experiments.</p>
+                        <label class="sr-only" for="agent-input-analytics-advisor">Focus for Analytics Advisor</label>
+                        <textarea id="agent-input-analytics-advisor" placeholder="Focus: engagement, reach, or conversions..." maxlength="400"></textarea>
+                        <div class="agent-actions">
+                            <button type="button" class="btn btn-outline-glow btn-sm" data-agent-activate>Activate</button>
+                            <button type="button" class="btn btn-glow btn-sm" data-agent-run disabled>
+                                <span class="btn-label">Run Agent</span>
+                                <span class="btn-spinner" hidden aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="agent-output" data-agent-output tabindex="0">Activate the agent, then run a task.</div>
+                    </article>
+                    <article class="agent-card glass-panel" data-agent="inbox-responder">
+                        <div class="agent-header">
+                            <h3>Inbox Responder</h3>
+                            <span class="agent-badge" data-agent-status>Idle</span>
+                        </div>
+                        <p>Draft polite, on-brand replies to comments and DMs.</p>
+                        <label class="sr-only" for="agent-input-inbox-responder">Message for Inbox Responder</label>
+                        <textarea id="agent-input-inbox-responder" placeholder="Paste a comment or DM..." maxlength="400"></textarea>
+                        <div class="agent-actions">
+                            <button type="button" class="btn btn-outline-glow btn-sm" data-agent-activate>Activate</button>
+                            <button type="button" class="btn btn-glow btn-sm" data-agent-run disabled>
+                                <span class="btn-label">Run Agent</span>
+                                <span class="btn-spinner" hidden aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="agent-output" data-agent-output tabindex="0">Activate the agent, then run a task.</div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- Leads -->
+            <section id="leads" class="dashboard-section" aria-labelledby="leads-heading">
+                <h2 id="leads-heading">Lead Management</h2>
+                <p class="section-lead">Add, edit, search, and sync leads with your CRM pipeline stages.</p>
+                <div class="leads-toolbar">
+                    <label class="sr-only" for="leads-search">Search leads</label>
+                    <input type="search" id="leads-search" placeholder="Search by name, email, or company..." aria-label="Search leads">
+                    <button type="button" class="btn btn-glow btn-sm" id="lead-add-btn">Add Lead</button>
+                </div>
+                <form class="lead-form glass-panel" id="lead-form" hidden novalidate>
+                    <input type="hidden" id="lead-id" value="">
+                    <div class="form-field">
+                        <label for="lead-name">Name <span class="required">*</span></label>
+                        <input type="text" id="lead-name" required maxlength="80">
+                        <span class="field-error" id="lead-name-error" hidden>Name is required.</span>
+                    </div>
+                    <div class="form-field">
+                        <label for="lead-email">Email <span class="required">*</span></label>
+                        <input type="email" id="lead-email" required maxlength="120">
+                        <span class="field-error" id="lead-email-error" hidden>Enter a valid email.</span>
+                    </div>
+                    <div class="form-field">
+                        <label for="lead-company">Company</label>
+                        <input type="text" id="lead-company" maxlength="80">
+                    </div>
+                    <div class="form-field">
+                        <label for="lead-stage">CRM stage</label>
+                        <select id="lead-stage">
+                            <option value="new">New</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="qualified">Qualified</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-glow btn-sm" id="lead-save-btn">
+                            <span class="btn-label">Save Lead</span>
+                            <span class="btn-spinner" hidden aria-hidden="true"></span>
+                        </button>
+                        <button type="button" class="btn btn-outline-glow btn-sm" id="lead-cancel-btn">Cancel</button>
+                    </div>
+                </form>
+                <div class="leads-table-wrap glass-panel">
+                    <table class="leads-table" aria-label="Leads list">
+                        <thead>
+                            <tr>
+                                <th scope="col">Name</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Company</th>
+                                <th scope="col">Stage</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leads-tbody"></tbody>
+                    </table>
+                    <p class="empty-state" id="leads-empty" hidden>No leads yet. Add your first lead to populate the CRM.</p>
+                </div>
+            </section>
+
+            <!-- CRM Pipeline -->
+            <section id="crm" class="dashboard-section" aria-labelledby="crm-heading">
+                <h2 id="crm-heading">CRM Pipeline</h2>
+                <p class="section-lead">Drag cards between stages or use Move to advance deals. Synced with Leads.</p>
+                <div class="crm-board" id="crm-board" role="region" aria-label="CRM Kanban board">
+                    <div class="crm-column glass-panel" data-stage="new">
+                        <div class="crm-column-header">
+                            <h3>New</h3>
+                            <span class="crm-count" data-count>0</span>
+                        </div>
+                        <div class="crm-cards" data-dropzone="new" aria-label="New stage"></div>
+                    </div>
+                    <div class="crm-column glass-panel" data-stage="contacted">
+                        <div class="crm-column-header">
+                            <h3>Contacted</h3>
+                            <span class="crm-count" data-count>0</span>
+                        </div>
+                        <div class="crm-cards" data-dropzone="contacted" aria-label="Contacted stage"></div>
+                    </div>
+                    <div class="crm-column glass-panel" data-stage="qualified">
+                        <div class="crm-column-header">
+                            <h3>Qualified</h3>
+                            <span class="crm-count" data-count>0</span>
+                        </div>
+                        <div class="crm-cards" data-dropzone="qualified" aria-label="Qualified stage"></div>
+                    </div>
+                    <div class="crm-column glass-panel" data-stage="closed">
+                        <div class="crm-column-header">
+                            <h3>Closed</h3>
+                            <span class="crm-count" data-count>0</span>
+                        </div>
+                        <div class="crm-cards" data-dropzone="closed" aria-label="Closed stage"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics -->
+            <section id="analytics" class="dashboard-section" aria-labelledby="analytics-heading">
+                <h2 id="analytics-heading">Analytics Overview</h2>
+                <div class="analytics-toolbar">
+                    <label for="analytics-range">Date range</label>
+                    <select id="analytics-range" aria-label="Analytics date range">
+                        <option value="7">Last 7 days</option>
+                        <option value="30" selected>Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                    </select>
+                    <button type="button" class="btn btn-outline-glow btn-sm" id="analytics-refresh">
+                        <span class="btn-label">Refresh</span>
+                        <span class="btn-spinner" hidden aria-hidden="true"></span>
+                    </button>
+                </div>
+                <div class="stats-grid analytics-stats" id="analytics-stats">
+                    <div class="stat-card glass-panel">
+                        <h3>Impressions</h3>
+                        <p class="stat-value" data-metric="impressions">48.2K</p>
+                        <span class="stat-change positive" data-metric-change="impressions">+9.4%</span>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Reach</h3>
+                        <p class="stat-value" data-metric="reach">31.7K</p>
+                        <span class="stat-change positive" data-metric-change="reach">+6.1%</span>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Profile Visits</h3>
+                        <p class="stat-value" data-metric="visits">2,840</p>
+                        <span class="stat-change positive" data-metric-change="visits">+14%</span>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <h3>Link Clicks</h3>
+                        <p class="stat-value" data-metric="clicks">891</p>
+                        <span class="stat-change" data-metric-change="clicks">−2.1%</span>
+                    </div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card glass-panel is-loading" data-chart-card="engagementMetricsChart">
+                        <h3>Engagement Metrics</h3>
+                        <div class="chart-skeleton" aria-hidden="true">
+                            <div class="skeleton-donut"></div>
+                        </div>
+                        <div class="chart-error" hidden role="alert">Charts unavailable. Check your connection and refresh.</div>
+                        <div class="chart-wrapper">
+                            <canvas id="engagementMetricsChart" aria-label="Engagement metrics chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card glass-panel is-loading" data-chart-card="reachImpressionsChart">
+                        <h3>Reach &amp; Impressions</h3>
+                        <div class="chart-skeleton" aria-hidden="true">
+                            <div class="skeleton-line"></div>
+                        </div>
+                        <div class="chart-error" hidden role="alert">Charts unavailable. Check your connection and refresh.</div>
+                        <div class="chart-wrapper">
+                            <canvas id="reachImpressionsChart" aria-label="Reach and impressions chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="analytics-extras">
+                    <div class="trending-section glass-panel">
+                        <h3>Trending Hashtags</h3>
+                        <div class="hashtag-list">
+                            <span class="hashtag">#socialmediamarketing</span>
+                            <span class="hashtag">#digitalmarketing</span>
+                            <span class="hashtag">#contentcreator</span>
+                            <span class="hashtag">#smallbusiness</span>
+                            <span class="hashtag">#marketingtips</span>
+                            <span class="hashtag">#AItools</span>
+                        </div>
+                    </div>
+                    <div class="best-time-section glass-panel">
+                        <h3>Best Posting Times</h3>
+                        <p>Based on your audience, the optimal times to post are:</p>
+                        <ul>
+                            <li>Monday: 10 AM, 2 PM</li>
+                            <li>Tuesday: 11 AM, 3 PM</li>
+                            <li>Wednesday: 9 AM, 1 PM</li>
+                            <li>Thursday: 12 PM, 4 PM</li>
+                            <li>Friday: 10 AM, 5 PM</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Inbox -->
+            <section id="inbox" class="dashboard-section" aria-labelledby="inbox-heading">
+                <h2 id="inbox-heading">Inbox</h2>
+                <div class="inbox-toolbar">
+                    <button type="button" class="btn btn-outline-glow btn-sm" id="inbox-mark-all">Mark all read</button>
+                </div>
+                <div class="inbox-list" id="inbox-list">
+                    <div class="inbox-item glass-panel unread" data-id="1">
+                        <div class="inbox-item-main">
+                            <p><strong>Chris Park commented:</strong> "Great post!" on your Instagram photo.</p>
+                            <span>2 hours ago · Instagram</span>
+                        </div>
+                        <button type="button" class="inbox-action" data-mark-read aria-label="Mark as read">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                        </button>
+                    </div>
+                    <div class="inbox-item glass-panel unread" data-id="2">
+                        <div class="inbox-item-main">
+                            <p><strong>Jane Smith sent a DM:</strong> "Love your content, let's collaborate!"</p>
+                            <span>5 hours ago · LinkedIn</span>
+                        </div>
+                        <button type="button" class="inbox-action" data-mark-read aria-label="Mark as read">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                        </button>
+                    </div>
+                    <div class="inbox-item glass-panel" data-id="3">
+                        <div class="inbox-item-main">
+                            <p><strong>Maya Lee replied:</strong> "When is the next drop?"</p>
+                            <span>Yesterday · X</span>
+                        </div>
+                        <button type="button" class="inbox-action" data-mark-read aria-label="Mark as read" hidden>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings -->
+            <section id="settings" class="dashboard-section" aria-labelledby="settings-heading">
+                <h2 id="settings-heading">Settings</h2>
+                <form class="settings-form glass-panel" id="settings-form" novalidate>
+                    <fieldset class="settings-fieldset">
+                        <legend>Profile</legend>
+                        <label for="settings-name">Display name</label>
+                        <input type="text" id="settings-name" name="name" value="Alex Rivera" required autocomplete="name">
+
+                        <label for="settings-email">Email</label>
+                        <input type="email" id="settings-email" name="email" value="alex@projectalpha.ai" required autocomplete="email">
+                        <span class="field-error" id="email-error" hidden>Enter a valid email address.</span>
+                    </fieldset>
+
+                    <fieldset class="settings-fieldset">
+                        <legend>Password</legend>
+                        <label for="settings-password">New password</label>
+                        <input type="password" id="settings-password" name="password" minlength="8" autocomplete="new-password" placeholder="Leave blank to keep current">
+                        <span class="field-error" id="password-error" hidden>Password must be at least 8 characters.</span>
+
+                        <label for="settings-password-confirm">Confirm new password</label>
+                        <input type="password" id="settings-password-confirm" name="passwordConfirm" minlength="8" autocomplete="new-password" placeholder="Repeat new password">
+                        <span class="field-error" id="password-confirm-error" hidden>Passwords do not match.</span>
+                    </fieldset>
+
+                    <fieldset class="settings-fieldset">
+                        <legend>Preferences</legend>
+                        <label for="settings-timezone">Timezone</label>
+                        <select id="settings-timezone" name="timezone">
+                            <option value="UTC">UTC</option>
+                            <option value="America/New_York" selected>Eastern (US)</option>
+                            <option value="America/Los_Angeles">Pacific (US)</option>
+                            <option value="Europe/London">London</option>
+                            <option value="Asia/Kolkata">India (IST)</option>
+                        </select>
+
+                        <label for="notifications" class="checkbox-label">
+                            <input type="checkbox" id="notifications" name="notifications" checked>
+                            Enable email notifications
+                        </label>
+
+                        <label for="ai-suggestions" class="checkbox-label">
+                            <input type="checkbox" id="ai-suggestions" name="aiSuggestions" checked>
+                            Show AI content suggestions
+                        </label>
+                    </fieldset>
+
+                    <button type="submit" class="btn btn-glow" id="settings-submit">
+                        <span class="btn-label">Save Changes</span>
+                        <span class="btn-spinner" hidden aria-hidden="true"></span>
+                    </button>
+                    <div class="form-success" id="settings-success" hidden role="status">Settings saved!</div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <script src="../js/auth.js" defer></script>
+    <script src="../js/vendor/chart.umd.min.js" defer></script>
+    <script src="../js/dashboard.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Project Alpha AI — The premium AI-powered social media automation platform. Schedule posts, generate content, analyze performance, and grow your audience with intelligent automation.">
+    <meta name="keywords" content="AI social media, automation, content scheduling, analytics, Project Alpha">
+    <meta name="author" content="Project Alpha AI">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#030712">
+    <link rel="canonical" href="https://projectalpha.ai/">
+    <link rel="icon" type="image/svg+xml" href="./img/favicon.svg">
+    <link rel="apple-touch-icon" href="./img/favicon.svg">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://projectalpha.ai/">
+    <meta property="og:title" content="Project Alpha AI — Intelligent Social Media Automation">
+    <meta property="og:description" content="Revolutionize your social presence with AI-powered scheduling, content generation, and predictive analytics.">
+    <meta property="og:site_name" content="Project Alpha AI">
+    <meta property="og:image" content="https://projectalpha.ai/img/favicon.svg">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Project Alpha AI — Intelligent Social Media Automation">
+    <meta name="twitter:description" content="Revolutionize your social presence with AI-powered scheduling, content generation, and predictive analytics.">
+    <meta name="twitter:image" content="https://projectalpha.ai/img/favicon.svg">
+
+    <title>Project Alpha AI — Intelligent Social Media Automation Platform</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"></noscript>
+    <link rel="stylesheet" href="./css/style.css">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Project Alpha AI",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "description": "AI-powered social media automation platform for scheduling, content generation, and analytics.",
+        "offers": {
+            "@type": "AggregateOffer",
+            "lowPrice": "9",
+            "highPrice": "29",
+            "priceCurrency": "USD"
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "ratingCount": "2847"
+        }
+    }
+    </script>
+</head>
+<body>
+    <a href="#hero" class="skip-link">Skip to main content</a>
+    <!-- Custom Cursor -->
+    <div class="custom-cursor" aria-hidden="true">
+        <div class="cursor-dot"></div>
+        <div class="cursor-ring"></div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen" aria-hidden="true">
+        <div class="loading-content">
+            <div class="loading-logo">
+                <svg class="loading-sphere" viewBox="0 0 80 80" aria-hidden="true">
+                    <defs>
+                        <radialGradient id="loadGrad" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#60a5fa"/>
+                            <stop offset="50%" stop-color="#7c3aed"/>
+                            <stop offset="100%" stop-color="#06b6d4"/>
+                        </radialGradient>
+                    </defs>
+                    <circle cx="40" cy="40" r="36" fill="url(#loadGrad)" opacity="0.9"/>
+                    <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+                </svg>
+            </div>
+            <p class="loading-text"><span class="ai-logo-gradient">Project Alpha</span> AI</p>
+            <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <!-- Aurora Background -->
+    <div class="aurora-bg" aria-hidden="true">
+        <div class="aurora aurora-1"></div>
+        <div class="aurora aurora-2"></div>
+        <div class="aurora aurora-3"></div>
+    </div>
+
+    <header class="site-header" role="banner">
+        <nav class="navbar" aria-label="Main navigation">
+            <a href="./index.html" class="logo" aria-label="Project Alpha AI Home">
+                <svg class="logo-icon" viewBox="0 0 32 32" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#3b82f6"/>
+                            <stop offset="100%" stop-color="#8b5cf6"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="16" cy="16" r="14" fill="url(#logoGrad)" opacity="0.2"/>
+                    <path d="M16 4 L28 16 L16 28 L4 16 Z" fill="none" stroke="url(#logoGrad)" stroke-width="1.5"/>
+                    <circle cx="16" cy="16" r="4" fill="url(#logoGrad)"/>
+                </svg>
+                <span><span class="ai-logo-gradient">Project Alpha</span> AI</span>
+            </a>
+            <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+                <span class="nav-toggle-bar"></span>
+            </button>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="#cta">Contact</a></li>
+                <li><a href="./pages/login.html">Log In</a></li>
+                <li><a href="./pages/signup.html" class="btn btn-glow btn-sm">Sign Up</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Hero -->
+        <section id="hero" class="hero" aria-labelledby="hero-heading">
+            <canvas id="particle-canvas" aria-hidden="true"></canvas>
+            <div class="hero-gradient-bg" aria-hidden="true"></div>
+            <div class="hero-background-elements" aria-hidden="true" data-parallax-layer="0.03">
+                <div class="ai-sphere" id="ai-sphere">
+                    <div class="ai-sphere-core"></div>
+                    <div class="ai-sphere-glow"></div>
+                    <div class="ai-sphere-ring ai-sphere-ring-1"></div>
+                    <div class="ai-sphere-ring ai-sphere-ring-2"></div>
+                    <div class="ai-sphere-ring ai-sphere-ring-3"></div>
+                </div>
+                <svg class="neural-illustration" viewBox="0 0 400 300" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="neuralGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.6"/>
+                            <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.6"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="4" fill="#3b82f6" opacity="0.8"/>
+                    <circle cx="150" cy="80" r="3" fill="#8b5cf6" opacity="0.7"/>
+                    <circle cx="250" cy="40" r="5" fill="#06b6d4" opacity="0.8"/>
+                    <circle cx="350" cy="100" r="3" fill="#3b82f6" opacity="0.6"/>
+                    <circle cx="100" cy="200" r="4" fill="#8b5cf6" opacity="0.7"/>
+                    <circle cx="200" cy="250" r="3" fill="#06b6d4" opacity="0.8"/>
+                    <circle cx="300" cy="180" r="4" fill="#3b82f6" opacity="0.6"/>
+                    <line x1="50" y1="50" x2="150" y2="80" stroke="url(#neuralGrad)" stroke-width="0.5" opacity="0.4"/>
+                    <line x1="150" y1="80" x2="250" y2="40" stroke="url(#neuralGrad)" stroke-width="0.5" opacity="0.4"/>
+                    <line x1="250" y1="40" x2="350" y2="100" stroke="url(#neuralGrad)" stroke-width="0.5" opacity="0.4"/>
+                    <line x1="50" y1="50" x2="100" y2="200" stroke="url(#neuralGrad)" stroke-width="0.5" opacity="0.3"/>
+                    <line x1="100" y1="200" x2="200" y2="250" stroke="url(#neuralGrad)" stroke-width="0.5" opacity="0.3"/>
+                    <line x1="200" y1="250" x2="300" y2="180" stroke="url(#neuralGrad)" stroke-width="0.5" opacity="0.3"/>
+                    <line x1="300" y1="180" x2="350" y2="100" stroke="url(#neuralGrad)" stroke-width="0.5" opacity="0.3"/>
+                </svg>
+            </div>
+
+            <div class="hero-inner">
+                <div class="hero-content reveal-on-scroll" data-parallax-layer="0.05">
+                    <p class="hero-eyebrow">
+                        <svg class="icon-inline" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.606l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z"/></svg>
+                        Next-gen social automation
+                    </p>
+                    <h1 id="hero-heading" class="cinematic-heading">Revolutionize Your Social Presence with <span class="ai-logo-gradient">AI</span></h1>
+                    <p class="tagline">The premium platform for intelligent social media management, AI content generation, and predictive analytics — built for creators and brands who demand excellence.</p>
+
+                    <div class="hero-stats">
+                        <div class="hero-stat">
+                            <span class="stat-number" data-target="2000" data-suffix="+">0</span>
+                            <span class="stat-label">Creators</span>
+                        </div>
+                        <div class="hero-stat">
+                            <span class="stat-number" data-target="500000" data-suffix="+">0</span>
+                            <span class="stat-label">Posts Scheduled</span>
+                        </div>
+                        <div class="hero-stat">
+                            <span class="stat-number" data-target="98" data-suffix="%">0</span>
+                            <span class="stat-label">Uptime</span>
+                        </div>
+                    </div>
+
+                    <div class="hero-actions">
+                        <a href="./pages/signup.html" class="btn btn-glow">
+                            <svg class="btn-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+                            Get Started Free
+                        </a>
+                        <a href="#chatbot" class="btn btn-outline-glow">
+                            <svg class="btn-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/></svg>
+                            Watch Demo
+                        </a>
+                    </div>
+                </div>
+
+                <div class="hero-dashboard-mockup glass-panel mockup-3d reveal-on-scroll" data-parallax data-tilt>
+                    <div class="mockup-glow" aria-hidden="true"></div>
+                    <div class="dashboard-header">
+                        <div class="mockup-dots" aria-hidden="true">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <h3>Live Automation Status</h3>
+                        <span class="status-badge live">LIVE</span>
+                    </div>
+                    <div class="status-cards-grid">
+                        <div class="status-card">
+                            <p>Instagram Automation</p>
+                            <span class="status-indicator active">AI ACTIVE</span>
+                        </div>
+                        <div class="status-card">
+                            <p>Post Scheduling</p>
+                            <span class="status-indicator running">RUNNING</span>
+                        </div>
+                        <div class="status-card">
+                            <p>AI Content Generation</p>
+                            <span class="status-indicator active">AI ACTIVE</span>
+                        </div>
+                    </div>
+                    <div class="mockup-chart" aria-hidden="true">
+                        <div class="chart-bar" style="--h: 60%"></div>
+                        <div class="chart-bar" style="--h: 85%"></div>
+                        <div class="chart-bar" style="--h: 45%"></div>
+                        <div class="chart-bar" style="--h: 92%"></div>
+                        <div class="chart-bar" style="--h: 70%"></div>
+                        <div class="chart-bar" style="--h: 55%"></div>
+                    </div>
+                    <div class="animated-data-stream"></div>
+                    <div class="social-icons-animated">
+                        <img src="./img/instagram.svg" alt="Instagram integration">
+                        <img src="./img/facebook.svg" alt="Facebook integration">
+                        <img src="./img/linkedin.svg" alt="LinkedIn integration">
+                        <img src="./img/x.svg" alt="X (Twitter) integration">
+                        <img src="./img/youtube.svg" alt="YouTube integration">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Logo Cloud / Trust Bar -->
+        <section class="trust-bar" aria-label="Trusted by leading brands">
+            <div class="container">
+                <p class="trust-label reveal-on-scroll">Built for modern social teams across every industry</p>
+            </div>
+            <div class="marquee-wrapper" aria-hidden="true">
+                <div class="marquee-track">
+                    <div class="marquee-content">
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 120 28" width="120" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">NORTHLINE</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 100 28" width="100" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">ORBITLY</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 120 28" width="120" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">MERIDIAN</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 110 28" width="110" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">CASCADE</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 130 28" width="130" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">BRIGHTPATH</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 140 28" width="140" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">VERTEX MEDIA</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 140 28" width="140" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">LOOM DIGITAL</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 120 28" width="120" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">PULSE LABS</text></svg></span>
+                    </div>
+                    <div class="marquee-content" aria-hidden="true">
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 120 28" width="120" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">NORTHLINE</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 100 28" width="100" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">ORBITLY</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 120 28" width="120" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">MERIDIAN</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 110 28" width="110" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">CASCADE</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 130 28" width="130" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">BRIGHTPATH</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 140 28" width="140" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">VERTEX MEDIA</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 140 28" width="140" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">LOOM DIGITAL</text></svg></span>
+                        <span class="logo-item"><svg class="logo-mark" viewBox="0 0 120 28" width="120" height="28" focusable="false"><text x="0" y="20" fill="currentColor" font-family="Space Grotesk, sans-serif" font-size="16" font-weight="600" letter-spacing="0.04em">PULSE LABS</text></svg></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section id="features" class="features section-glowing-bg" aria-labelledby="features-heading">
+            <div class="container">
+                <h2 id="features-heading" class="section-title reveal-on-scroll">Core <span class="ai-logo-gradient">AI</span> Capabilities</h2>
+                <p class="section-subtitle reveal-on-scroll">Six powerful modules engineered to transform how you create, schedule, and grow.</p>
+                <div class="feature-grid">
+                    <article class="feature-item glass-panel reveal-on-scroll" data-tilt>
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="fi1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient></defs><rect x="8" y="12" width="32" height="28" rx="4" fill="none" stroke="url(#fi1)" stroke-width="2"/><path d="M16 22h16M16 28h12M16 34h8" stroke="url(#fi1)" stroke-width="2" stroke-linecap="round"/><circle cx="36" cy="12" r="6" fill="url(#fi1)" opacity="0.3"/></svg>
+                        </div>
+                        <h3>AI Content Orchestrator</h3>
+                        <p>Plan, create, and optimize content across every platform with context-aware AI that learns your brand voice.</p>
+                        <span class="feature-tag">AI ACTIVE</span>
+                    </article>
+                    <article class="feature-item glass-panel reveal-on-scroll" data-tilt>
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="fi2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#06b6d4"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs><polyline points="8,36 18,24 28,30 40,12" fill="none" stroke="url(#fi2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="40" cy="12" r="4" fill="url(#fi2)"/></svg>
+                        </div>
+                        <h3>Predictive Analytics</h3>
+                        <p>Real-time performance insights and audience behavior forecasting powered by machine learning models.</p>
+                        <span class="feature-tag">LIVE DATA</span>
+                    </article>
+                    <article class="feature-item glass-panel reveal-on-scroll" data-tilt>
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="fi3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#ec4899"/></linearGradient></defs><circle cx="24" cy="24" r="16" fill="none" stroke="url(#fi3)" stroke-width="2"/><path d="M24 8v8M24 32v8M8 24h8M32 24h8" stroke="url(#fi3)" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="24" r="4" fill="url(#fi3)"/></svg>
+                        </div>
+                        <h3>Smart Scheduling</h3>
+                        <p>Deploy content at optimal moments with AI-driven timing that maximizes reach and engagement.</p>
+                        <span class="feature-tag">AUTOMATION</span>
+                    </article>
+                    <article class="feature-item glass-panel reveal-on-scroll" data-tilt>
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="fi4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs><path d="M8 16c0-2 2-4 6-4h20c4 0 6 2 6 4v16c0 2-2 4-6 4H14c-4 0-6-2-6-4V16z" fill="none" stroke="url(#fi4)" stroke-width="2"/><path d="M16 24c2 2 6 6 8 6s6-4 8-6" fill="none" stroke="url(#fi4)" stroke-width="2" stroke-linecap="round"/></svg>
+                        </div>
+                        <h3>Intelligent Inbox</h3>
+                        <p>Streamline DMs and comments with AI-assisted responses that maintain your authentic voice.</p>
+                        <span class="feature-tag">AI ASSISTED</span>
+                    </article>
+                    <article class="feature-item glass-panel reveal-on-scroll" data-tilt>
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="fi5" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#ef4444"/></linearGradient></defs><path d="M24 4L6 14v20l18 10 18-10V14L24 4z" fill="none" stroke="url(#fi5)" stroke-width="2"/><path d="M18 24l6 6 12-12" fill="none" stroke="url(#fi5)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <h3>Multi-Platform Sync</h3>
+                        <p>Connect Instagram, Facebook, LinkedIn, X, and YouTube from a unified command center.</p>
+                        <span class="feature-tag">5 PLATFORMS</span>
+                    </article>
+                    <article class="feature-item glass-panel reveal-on-scroll" data-tilt>
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="fi6" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient></defs><rect x="10" y="8" width="28" height="32" rx="3" fill="none" stroke="url(#fi6)" stroke-width="2"/><path d="M18 20h12M18 26h8M18 32h10" stroke="url(#fi6)" stroke-width="2" stroke-linecap="round"/><circle cx="34" cy="34" r="8" fill="url(#fi6)" opacity="0.2"/></svg>
+                        </div>
+                        <h3>AI Report Generator</h3>
+                        <p>Automated weekly reports with actionable insights delivered straight to your inbox.</p>
+                        <span class="feature-tag">WEEKLY</span>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section id="how-it-works" class="how-it-works section-glowing-bg" aria-labelledby="how-heading">
+            <div class="container">
+                <h2 id="how-heading" class="section-title reveal-on-scroll">How <span class="ai-logo-gradient">Project Alpha</span> Works</h2>
+                <p class="section-subtitle reveal-on-scroll">From connection to conversion in three seamless steps.</p>
+                <div class="steps-grid">
+                    <div class="step-item glass-panel reveal-on-scroll" data-parallax-layer="0.02">
+                        <div class="step-number">01</div>
+                        <div class="step-icon">
+                            <svg viewBox="0 0 40 40" aria-hidden="true"><path fill="currentColor" d="M20 4a16 16 0 100 32 16 16 0 000-32zm0 4a12 12 0 110 24 12 12 0 010-24zm-1 6v8h8v-2h-6v-6h-2z"/></svg>
+                        </div>
+                        <h3>Connect Your Channels</h3>
+                        <p>Link all your social accounts in seconds with secure OAuth. One dashboard, every platform.</p>
+                    </div>
+                    <div class="step-connector reveal-on-scroll" aria-hidden="true">
+                        <svg viewBox="0 0 100 20"><path d="M0 10 H100" stroke="url(#connGrad)" stroke-width="2" stroke-dasharray="6 4"/><defs><linearGradient id="connGrad"><stop stop-color="#3b82f6"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs></svg>
+                    </div>
+                    <div class="step-item glass-panel reveal-on-scroll" data-parallax-layer="0.02">
+                        <div class="step-number">02</div>
+                        <div class="step-icon">
+                            <svg viewBox="0 0 40 40" aria-hidden="true"><path fill="currentColor" d="M8 8h24v24H8V8zm4 4v16h16V12H12zm4 4h8v2h-8v-2zm0 4h8v2h-8v-2zm0 4h5v2h-5v-2z"/></svg>
+                        </div>
+                        <h3>Generate & Schedule</h3>
+                        <p>Let AI craft captions, hashtags, and visuals. Schedule weeks of content in minutes.</p>
+                    </div>
+                    <div class="step-connector reveal-on-scroll" aria-hidden="true">
+                        <svg viewBox="0 0 100 20"><path d="M0 10 H100" stroke="url(#connGrad)" stroke-width="2" stroke-dasharray="6 4"/></svg>
+                    </div>
+                    <div class="step-item glass-panel reveal-on-scroll" data-parallax-layer="0.02">
+                        <div class="step-number">03</div>
+                        <div class="step-icon">
+                            <svg viewBox="0 0 40 40" aria-hidden="true"><path fill="currentColor" d="M20 4l4 12h12l-10 8 4 12-10-8-10 8 4-12-10-8h12z"/></svg>
+                        </div>
+                        <h3>Grow & Optimize</h3>
+                        <p>Track performance, refine strategy with predictive analytics, and scale what works.</p>
+                    </div>
+                </div>
+                <div class="showcase-panel glass-panel reveal-on-scroll">
+                    <div class="showcase-visual" aria-hidden="true">
+                        <svg class="showcase-svg" viewBox="0 0 500 300">
+                            <defs>
+                                <linearGradient id="showGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.3"/>
+                                    <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.3"/>
+                                </linearGradient>
+                            </defs>
+                            <rect x="20" y="20" width="460" height="260" rx="12" fill="url(#showGrad)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                            <rect x="40" y="50" width="120" height="80" rx="8" fill="rgba(59,130,246,0.2)"/>
+                            <rect x="180" y="50" width="120" height="80" rx="8" fill="rgba(139,92,246,0.2)"/>
+                            <rect x="320" y="50" width="140" height="80" rx="8" fill="rgba(6,182,212,0.2)"/>
+                            <rect x="40" y="150" width="420" height="110" rx="8" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)"/>
+                            <polyline points="60,230 120,190 180,210 240,160 300,180 360,140 420,170" fill="none" stroke="#3b82f6" stroke-width="2"/>
+                            <circle cx="420" cy="170" r="5" fill="#8b5cf6"/>
+                        </svg>
+                    </div>
+                    <div class="showcase-content">
+                        <h3>Your AI Command Center</h3>
+                        <p>Everything you need in one beautiful interface — analytics, scheduling, AI tools, and inbox management unified.</p>
+                        <a href="./pages/login.html" class="btn btn-glow">Explore Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Chatbot Preview -->
+        <section id="chatbot" class="chatbot-section section-glowing-bg" aria-labelledby="chatbot-heading">
+            <div class="container">
+                <h2 id="chatbot-heading" class="section-title reveal-on-scroll">Meet Your <span class="ai-logo-gradient">AI Assistant</span></h2>
+                <p class="section-subtitle reveal-on-scroll">Natural conversations that understand your brand and accelerate your workflow.</p>
+                <div class="chatbot-wrapper reveal-on-scroll">
+                    <div class="chatbot-ui glass-panel">
+                        <div class="chatbot-header">
+                            <div class="chatbot-avatar">
+                                <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="url(#chatGrad)"/><defs><linearGradient id="chatGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop stop-color="#3b82f6"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><circle cx="20" cy="20" r="8" fill="white" opacity="0.9"/></svg>
+                            </div>
+                            <div>
+                                <h3>Alpha AI</h3>
+                                <span class="chatbot-status">Online · Ready to help</span>
+                            </div>
+                        </div>
+                        <div class="chatbot-messages" id="chatbot-messages">
+                            <div class="chat-message bot">
+                                <p>Hi! I'm Alpha, your AI social media strategist. What would you like to create today?</p>
+                            </div>
+                            <div class="chat-message user">
+                                <p>Generate an Instagram caption for our new product launch.</p>
+                            </div>
+                            <div class="chat-message bot typing-message">
+                                <div class="typing-indicator" aria-label="AI is typing">
+                                    <span></span><span></span><span></span>
+                                </div>
+                            </div>
+                        </div>
+                        <form class="chatbot-input" id="chatbot-form" autocomplete="off">
+                            <input type="text" id="chatbot-input" name="message" placeholder="Ask Alpha anything..." aria-label="Chat message input" maxlength="280">
+                            <button type="submit" id="chatbot-send" aria-label="Send message">
+                                <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="chatbot-response glass-panel" id="chatbot-response">
+                        <p class="response-label">Generated Caption</p>
+                        <p class="response-text" id="typing-response"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing -->
+        <section id="pricing" class="pricing section-glowing-bg" aria-labelledby="pricing-heading">
+            <div class="container">
+                <h2 id="pricing-heading" class="section-title reveal-on-scroll">Flexible <span class="ai-logo-gradient">AI</span> Power for Every Scale</h2>
+                <p class="section-subtitle reveal-on-scroll">Choose the plan that fits your ambitions. Cancel anytime.</p>
+                <div class="pricing-toggle reveal-on-scroll">
+                    <span class="toggle-label" data-period="monthly">Monthly</span>
+                    <button class="toggle-switch" id="pricing-toggle" role="switch" aria-checked="false" aria-label="Toggle annual billing">
+                        <span class="toggle-knob"></span>
+                    </button>
+                    <span class="toggle-label" data-period="annual">Annual <span class="save-badge">Save 20%</span></span>
+                </div>
+                <div class="pricing-grid">
+                    <article class="pricing-item glass-panel reveal-on-scroll" data-tilt>
+                        <h3>Genesis</h3>
+                        <p class="price" data-monthly="9" data-annual="7"><span class="currency">$</span><span class="amount">9</span><span class="period">/month</span></p>
+                        <ul class="feature-list">
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> 5 AI-optimized posts/day</li>
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Essential Analytics</li>
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Standard Support</li>
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Basic Content Calendar</li>
+                        </ul>
+                        <a href="./pages/signup.html" class="btn btn-outline-glow">Start Genesis</a>
+                    </article>
+                    <article class="pricing-item glass-panel premium reveal-on-scroll" data-tilt>
+                        <span class="popular-badge">Most Popular</span>
+                        <h3>Ascension</h3>
+                        <p class="price" data-monthly="29" data-annual="23"><span class="currency">$</span><span class="amount">29</span><span class="period">/month</span></p>
+                        <ul class="feature-list">
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> 10 AI-optimized posts/day</li>
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Advanced Predictive Analytics</li>
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Full AI Toolset Access</li>
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Priority AI Assistant</li>
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Premium Content Calendar</li>
+                        </ul>
+                        <a href="./pages/signup.html" class="btn btn-glow">Go Ascension</a>
+                    </article>
+                    <article class="pricing-item glass-panel reveal-on-scroll" data-tilt>
+                        <h3>Singularity</h3>
+                        <p class="price-custom">Custom</p>
+                        <ul class="feature-list">
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Unlimited AI Automation</li>
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Dedicated AI Strategist</li>
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Bespoke API Integrations</li>
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> 24/7 Elite Support</li>
+                            <li><svg class="check-icon" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Advanced AI Command Center</li>
+                        </ul>
+                        <a href="#cta" class="btn btn-outline-glow">Contact Sales</a>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials -->
+        <section id="testimonials" class="testimonials section-glowing-bg" aria-labelledby="testimonials-heading">
+            <div class="container">
+                <h2 id="testimonials-heading" class="section-title reveal-on-scroll">Loved by <span class="ai-logo-gradient">Creators</span> Worldwide</h2>
+                <p class="section-subtitle reveal-on-scroll">Join thousands of brands transforming their social strategy with AI.</p>
+                <div class="testimonials-grid">
+                    <blockquote class="testimonial-card glass-panel reveal-on-scroll" data-tilt>
+                        <div class="testimonial-stars" aria-label="5 out of 5 stars">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        </div>
+                        <p>"Project Alpha cut our content creation time by 70%. The AI captions are indistinguishable from our brand voice."</p>
+                        <footer class="testimonial-author">
+                            <img src="./img/avatar.svg" alt="Sarah Chen avatar" width="48" height="48" loading="lazy">
+                            <div>
+                                <cite>Sarah Chen</cite>
+                                <span>Head of Marketing, Northline Commerce</span>
+                            </div>
+                        </footer>
+                    </blockquote>
+                    <blockquote class="testimonial-card glass-panel reveal-on-scroll" data-tilt>
+                        <div class="testimonial-stars" aria-label="5 out of 5 stars">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        </div>
+                        <p>"The predictive analytics alone paid for itself in the first month. We know exactly when to post for maximum engagement."</p>
+                        <footer class="testimonial-author">
+                            <img src="./img/avatar.svg" alt="Marcus Rivera avatar" width="48" height="48" loading="lazy" class="avatar-alt-purple">
+                            <div>
+                                <cite>Marcus Rivera</cite>
+                                <span>Founder, Orbitly Studios</span>
+                            </div>
+                        </footer>
+                    </blockquote>
+                    <blockquote class="testimonial-card glass-panel reveal-on-scroll" data-tilt>
+                        <div class="testimonial-stars" aria-label="5 out of 5 stars">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        </div>
+                        <p>"Finally, a social tool that feels premium. The dashboard is gorgeous and the AI assistant is genuinely useful."</p>
+                        <footer class="testimonial-author">
+                            <img src="./img/avatar.svg" alt="Elena Voss avatar" width="48" height="48" loading="lazy" class="avatar-alt-cyan">
+                            <div>
+                                <cite>Elena Voss</cite>
+                                <span>Social Director, Meridian Agency</span>
+                            </div>
+                        </footer>
+                    </blockquote>
+                </div>
+            </div>
+        </section>
+
+        <!-- About -->
+        <section id="about" class="about section-glowing-bg" aria-labelledby="about-heading">
+            <div class="container">
+                <h2 id="about-heading" class="section-title reveal-on-scroll">About <span class="ai-logo-gradient">Project Alpha</span></h2>
+                <p class="section-subtitle reveal-on-scroll">We're building the intelligent layer for modern social media teams.</p>
+                <div class="legal-content glass-panel reveal-on-scroll">
+                    <p>Project Alpha AI helps creators and brands schedule content, generate on-brand copy, and understand performance — all from one premium command center. Our mission is simple: replace busywork with intelligent automation so teams can focus on strategy and storytelling.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq" class="faq section-glowing-bg" aria-labelledby="faq-heading">
+            <div class="container">
+                <h2 id="faq-heading" class="section-title reveal-on-scroll">Frequently Asked <span class="ai-logo-gradient">Questions</span></h2>
+                <p class="section-subtitle reveal-on-scroll">Everything you need to know before getting started.</p>
+                <div class="faq-list reveal-on-scroll">
+                    <details class="faq-item glass-panel">
+                        <summary>How does the AI content generation work?</summary>
+                        <div class="faq-answer">
+                            <p>Our AI analyzes your brand voice, past content, and audience engagement patterns to generate captions, hashtags, and content ideas that match your style. You can always edit before publishing.</p>
+                        </div>
+                    </details>
+                    <details class="faq-item glass-panel">
+                        <summary>Which social platforms are supported?</summary>
+                        <div class="faq-answer">
+                            <p>Project Alpha supports Instagram, Facebook, LinkedIn, X (Twitter), and YouTube out of the box — with more channels added based on customer demand.</p>
+                        </div>
+                    </details>
+                    <details class="faq-item glass-panel">
+                        <summary>Can I switch plans or cancel anytime?</summary>
+                        <div class="faq-answer">
+                            <p>Yes. Upgrade, downgrade, or cancel anytime from your dashboard. Annual plans include a 20% discount and a 14-day refund window.</p>
+                        </div>
+                    </details>
+                    <details class="faq-item glass-panel">
+                        <summary>Is my data secure?</summary>
+                        <div class="faq-answer">
+                            <p>We use enterprise-grade encryption, SOC 2–aligned infrastructure, and never sell your data. OAuth means we never store your social passwords.</p>
+                        </div>
+                    </details>
+                    <details class="faq-item glass-panel">
+                        <summary>Do you offer a free trial?</summary>
+                        <div class="faq-answer">
+                            <p>Yes — start a 14-day free trial on any paid plan. No credit card required to explore the platform.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <!-- Legal (Privacy & Terms anchors) -->
+        <section id="privacy" class="legal-section section-glowing-bg" aria-labelledby="privacy-heading">
+            <div class="container">
+                <h2 id="privacy-heading" class="section-title reveal-on-scroll">Privacy <span class="ai-logo-gradient">Policy</span></h2>
+                <div class="legal-content glass-panel reveal-on-scroll">
+                    <p>Project Alpha AI respects your privacy. We collect only the data necessary to provide our social media automation services. Your OAuth credentials are never stored — we use secure token-based authentication. Analytics data is encrypted at rest and in transit. You may request data deletion at any time by contacting support@projectalpha.ai.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="terms" class="legal-section section-glowing-bg" aria-labelledby="terms-heading">
+            <div class="container">
+                <h2 id="terms-heading" class="section-title reveal-on-scroll">Terms of <span class="ai-logo-gradient">Service</span></h2>
+                <div class="legal-content glass-panel reveal-on-scroll">
+                    <p>By using Project Alpha AI, you agree to our terms of service. Subscriptions renew automatically unless cancelled. You retain ownership of all content you create. We reserve the right to suspend accounts that violate platform policies or engage in spam. For enterprise agreements, contact our sales team.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Banner + Contact -->
+        <section id="cta" class="cta-banner" aria-labelledby="cta-heading">
+            <div class="container">
+                <div class="cta-content glass-panel reveal-on-scroll">
+                    <h2 id="cta-heading">Ready to Transform Your <span class="ai-logo-gradient">Social Strategy</span>?</h2>
+                    <p>Join 2,000+ creators and brands already growing with Project Alpha AI.</p>
+                    <div class="cta-actions">
+                        <a href="./pages/signup.html" class="btn btn-glow btn-lg">Start Free Trial</a>
+                        <a href="./pages/login.html" class="btn btn-outline-glow btn-lg">Log In to Dashboard</a>
+                    </div>
+
+                    <form class="contact-form" id="contact-form" novalidate aria-label="Contact form">
+                        <h3 class="contact-form-title">Or send us a message</h3>
+                        <div class="contact-grid">
+                            <div class="form-field">
+                                <label for="contact-name">Name <span class="required">*</span></label>
+                                <input type="text" id="contact-name" name="name" required autocomplete="name" maxlength="80" placeholder="Your name">
+                                <span class="field-error" id="contact-name-error" hidden>Please enter your name.</span>
+                            </div>
+                            <div class="form-field">
+                                <label for="contact-email">Email <span class="required">*</span></label>
+                                <input type="email" id="contact-email" name="email" required autocomplete="email" maxlength="120" placeholder="you@company.com">
+                                <span class="field-error" id="contact-email-error" hidden>Enter a valid email address.</span>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label for="contact-message">Message <span class="required">*</span></label>
+                            <textarea id="contact-message" name="message" required maxlength="1000" rows="4" placeholder="Tell us about your goals..."></textarea>
+                            <span class="field-error" id="contact-message-error" hidden>Message must be at least 10 characters.</span>
+                        </div>
+                        <button type="submit" class="btn btn-glow" id="contact-submit">
+                            <span class="btn-label">Send Message</span>
+                            <span class="btn-spinner" hidden aria-hidden="true"></span>
+                        </button>
+                        <div class="form-success" id="contact-success" hidden role="status">Thanks! Your message was saved. We'll be in touch soon.</div>
+                        <div class="form-error-banner" id="contact-error" hidden role="alert">Something went wrong. Please try again.</div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="./index.html" class="logo" aria-label="Project Alpha AI Home">
+                    <span><span class="ai-logo-gradient">Project Alpha</span> AI</span>
+                </a>
+                <p>The premium AI-powered social media automation platform for modern creators and brands.</p>
+                <div class="footer-social">
+                    <a href="https://twitter.com" aria-label="Follow us on X" target="_blank" rel="noopener noreferrer">
+                        <img src="./img/x.svg" alt="" width="20" height="20" loading="lazy">
+                    </a>
+                    <a href="https://linkedin.com" aria-label="Follow us on LinkedIn" target="_blank" rel="noopener noreferrer">
+                        <img src="./img/linkedin.svg" alt="" width="20" height="20" loading="lazy">
+                    </a>
+                    <a href="https://instagram.com" aria-label="Follow us on Instagram" target="_blank" rel="noopener noreferrer">
+                        <img src="./img/instagram.svg" alt="" width="20" height="20" loading="lazy">
+                    </a>
+                    <a href="https://youtube.com" aria-label="Follow us on YouTube" target="_blank" rel="noopener noreferrer">
+                        <img src="./img/youtube.svg" alt="" width="20" height="20" loading="lazy">
+                    </a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Product</h4>
+                <ul>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#pricing">Pricing</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="./pages/login.html">Dashboard</a></li>
+                    <li><a href="./pages/signup.html">Sign Up</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#testimonials">Testimonials</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                    <li><a href="#cta">Contact</a></li>
+                    <li><a href="./pages/login.html">Log In</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#privacy">Privacy Policy</a></li>
+                    <li><a href="#terms">Terms of Service</a></li>
+                    <li><a href="mailto:support@projectalpha.ai">Support</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 <span class="ai-logo-gradient">Project Alpha AI</span>. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="./js/script.js" defer></script>
+</body>
+</html>

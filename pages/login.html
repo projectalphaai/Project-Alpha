@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Log in to Project Alpha AI — manage scheduling, AI agents, CRM, and analytics.">
+    <meta name="robots" content="noindex, follow">
+    <meta name="theme-color" content="#030712">
+    <title>Log In — Project Alpha AI</title>
+    <link rel="icon" type="image/svg+xml" href="../img/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"></noscript>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body class="auth-body">
+    <a href="#login-form" class="skip-link">Skip to login form</a>
+    <div class="aurora-bg" aria-hidden="true">
+        <div class="aurora aurora-1"></div>
+        <div class="aurora aurora-2"></div>
+        <div class="aurora aurora-3"></div>
+    </div>
+
+    <header class="site-header auth-navbar" role="banner">
+        <nav class="navbar" aria-label="Auth navigation">
+            <a href="../index.html" class="logo" aria-label="Project Alpha AI Home">
+                <svg class="logo-icon" viewBox="0 0 32 32" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="loginLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#3b82f6"/>
+                            <stop offset="100%" stop-color="#8b5cf6"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="16" cy="16" r="14" fill="url(#loginLogoGrad)" opacity="0.2"/>
+                    <circle cx="16" cy="16" r="4" fill="url(#loginLogoGrad)"/>
+                </svg>
+                <span><span class="ai-logo-gradient">Project Alpha</span> AI</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="./signup.html" class="btn btn-outline-glow btn-sm">Sign Up</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="auth-main">
+        <div class="auth-card glass-panel">
+            <h1>Welcome back</h1>
+            <p class="auth-lead">Log in to your AI command center.</p>
+
+            <form class="auth-form" id="login-form" novalidate>
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" name="email" autocomplete="email" required placeholder="you@company.com" aria-describedby="login-email-error">
+                <span class="field-error" id="login-email-error" role="alert"></span>
+
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" name="password" autocomplete="current-password" required minlength="8" placeholder="••••••••" aria-describedby="login-password-error">
+                <span class="field-error" id="login-password-error" role="alert"></span>
+
+                <div class="auth-form-error" id="login-form-error" hidden role="alert"></div>
+
+                <button type="submit" class="btn btn-glow" id="login-submit">
+                    <span class="btn-label">Log In</span>
+                    <span class="btn-spinner" hidden aria-hidden="true"></span>
+                </button>
+            </form>
+
+            <p class="auth-switch">Don't have an account? <a href="./signup.html">Create one</a></p>
+            <p class="auth-demo-hint">Demo account: <strong>demo@projectalpha.ai</strong> / <strong>demo1234</strong> — or sign up with any email. Auth stays in this browser only.</p>
+        </div>
+    </main>
+
+    <script src="../js/auth.js" defer></script>
+    <script src="../js/auth-pages.js" defer></script>
+</body>
+</html>
