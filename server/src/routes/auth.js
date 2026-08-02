@@ -38,6 +38,7 @@ function publicUser(user) {
     name: user.name,
     company: user.company || "",
     timezone: user.timezone || "UTC",
+    role: user.role || "owner",
     createdAt: user.createdAt || undefined
   };
 }

@@ -96,22 +96,27 @@ if (!auth.includes("/api/auth/login") || auth.includes("localStorage")) {
 
 const dash = fs.readFileSync(path.join(root, "js/dashboard.js"), "utf8");
 if (
-  !dash.includes("/api/oauth/meta/start") ||
+  !dash.includes("/api/oauth/") ||
   !dash.includes("/api/ai/generate-content") ||
   !dash.includes("/api/posts") ||
   !dash.includes("/api/activity") ||
   !dash.includes("/cancel") ||
-  !dash.includes("/retry")
+  !dash.includes("/retry") ||
+  !dash.includes("startOAuthFlow")
 ) {
-  fail("dashboard.js missing Sprint 4 scheduler API wiring");
-} else ok("dashboard wired to Meta, AI, posts, activity, cancel, retry");
+  fail("dashboard.js missing Sprint 5 OAuth / scheduler wiring");
+} else ok("dashboard wired to multi-provider OAuth, AI, posts, activity");
 
 if (dash.includes("seedPhase1DemoData") || dash.includes("pa_phase1_seeded")) {
   fail("mock seed data still present in dashboard.js");
 } else ok("mock seed data removed");
 
 const oauth = fs.readFileSync(path.join(root, "server/src/routes/oauth.js"), "utf8");
-if (!oauth.includes("graph.facebook.com") && !oauth.includes("buildMetaOAuthUrl")) {
+const metaLib = fs.readFileSync(path.join(root, "server/src/lib/meta.js"), "utf8");
+if (
+  (!oauth.includes("/meta/callback") && !oauth.includes("/:platform/callback")) ||
+  !metaLib.includes("buildMetaOAuthUrl")
+) {
   fail("Meta OAuth route missing");
 } else ok("Meta OAuth route present");
 
@@ -132,6 +137,17 @@ if (
 ) {
   fail("Sprint 4 publisher queue missing");
 } else ok("Sprint 4 publisher queue + mock adapter present");
+
+const oauthRoutes = fs.readFileSync(path.join(root, "server/src/routes/oauth.js"), "utf8");
+const oauthRegistry = fs.readFileSync(path.join(root, "server/src/lib/oauth/registry.js"), "utf8");
+if (
+  !oauthRoutes.includes("/:platform/start") ||
+  !oauthRegistry.includes("youtubeProvider") ||
+  !oauthRegistry.includes("linkedinProvider") ||
+  !oauthRegistry.includes("xProvider")
+) {
+  fail("Sprint 5 multi-provider OAuth missing");
+} else ok("Sprint 5 multi-provider OAuth present");
 
 if (failures.length) {
   console.error(`\n${failures.length} failure(s)`);

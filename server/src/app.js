@@ -5,7 +5,7 @@ import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
-import { config } from "./config.js";
+import { config, oauthProviderStatus } from "./config.js";
 import { prisma } from "./lib/prisma.js";
 import authRoutes from "./routes/auth.js";
 import oauthRoutes from "./routes/oauth.js";
@@ -14,6 +14,7 @@ import postsRoutes from "./routes/posts.js";
 import aiRoutes from "./routes/ai.js";
 import activityRoutes from "./routes/activity.js";
 import { getPublisherWorkerConfig } from "./worker/publisherWorker.js";
+import { listProviders } from "./lib/oauth/registry.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "../..");
@@ -60,7 +61,7 @@ export function createApp() {
     res.json({
       ok: true,
       service: "project-alpha",
-      sprint: 4,
+      sprint: 5,
       env: config.nodeEnv,
       database: "postgresql",
       openaiConfigured: Boolean(config.openai.apiKey),
@@ -68,7 +69,9 @@ export function createApp() {
         enabled: worker.enabled,
         adapter: worker.adapter,
         intervalMs: worker.intervalMs
-      }
+      },
+      oauth: oauthProviderStatus(),
+      oauthProviders: listProviders()
     });
   });
 

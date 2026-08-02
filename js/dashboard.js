@@ -11,7 +11,7 @@ const PLATFORM_LABELS = {
 const SECTION_META = {
   dashboard: { title: "Dashboard", subtitle: "Welcome back — here's your automation overview" },
   schedule: { title: "Scheduler", subtitle: "Calendar, publish queue, and post status" },
-  connect: { title: "Social Connections", subtitle: "Connect Instagram and Facebook via Meta OAuth" },
+  connect: { title: "Social Connections", subtitle: "OAuth for Instagram, Facebook, YouTube, LinkedIn, and X" },
   "ai-tools": { title: "AI Content Generator", subtitle: "Generate captions with OpenAI" },
   "ai-agents": { title: "AI Agents", subtitle: "Available in a later sprint" },
   leads: { title: "Leads", subtitle: "Available in a later sprint" },
@@ -861,20 +861,63 @@ function initScheduleForm() {
   });
 }
 
-/* ---------- Connections / Meta OAuth ---------- */
+/* ---------- Connections / multi-provider OAuth ---------- */
+
+function providerAuthLabel(platform) {
+  if (platform === "instagram" || platform === "facebook") return "Continue to Meta";
+  if (platform === "youtube") return "Continue to Google";
+  if (platform === "linkedin") return "Continue to LinkedIn";
+  if (platform === "x") return "Continue to X";
+  return "Continue to provider";
+}
+
+function startOAuthFlow(platform, { mode = "connect", connectionId = null, accountId = null } = {}) {
+  const icon = document.getElementById("oauth-icon");
+  const title = document.getElementById("oauth-title");
+  const subtitle = document.getElementById("oauth-subtitle");
+  const statusEl = document.getElementById("oauth-status");
+  const confirmBtn = document.getElementById("oauth-confirm-btn");
+  const label = confirmBtn?.querySelector(".btn-label");
+
+  if (icon) icon.src = `../img/${platform === "x" ? "x" : platform}.svg`;
+  if (title) {
+    title.textContent = `${mode === "reconnect" ? "Reconnect" : "Connect"} ${PLATFORM_LABELS[platform]}`;
+  }
+  if (subtitle) {
+    subtitle.textContent = `Secure OAuth for ${PLATFORM_LABELS[platform]}. Tokens are encrypted in PostgreSQL.`;
+  }
+  if (statusEl) statusEl.textContent = "";
+  if (label) label.textContent = providerAuthLabel(platform);
+  openModal("oauth-modal");
+
+  if (!confirmBtn) return;
+  confirmBtn.onclick = async () => {
+    setButtonLoading(confirmBtn, true);
+    if (statusEl) statusEl.textContent = "Creating secure OAuth session…";
+    try {
+      const data = await AlphaAPI.api(`/api/oauth/${platform}/start`, {
+        method: "POST",
+        body: { mode, connectionId, accountId }
+      });
+      window.location.href = data.url;
+    } catch (err) {
+      setButtonLoading(confirmBtn, false);
+      if (statusEl) statusEl.textContent = err.message;
+      showToast(err.message || "Could not start OAuth.", "error");
+    }
+  };
+}
 
 function initConnectPages() {
   document.querySelectorAll(".connect-card").forEach((card) => {
     const btn = card.querySelector(".connect-btn");
+    const reconnectBtn = card.querySelector(".reconnect-btn");
+
     btn?.addEventListener("click", async () => {
       const platform = card.dataset.platform;
-      const state = cachedConnections[platform];
-      if (!state?.supported) {
-        showToast("Sprint 1 supports Instagram and Facebook OAuth only.", "error");
-        return;
-      }
+      const state = cachedConnections[platform] || {};
 
-      if (state.connected) {
+      if (state.connected && !state.reconnectRequired) {
         btn.disabled = true;
         try {
           await AlphaAPI.api(`/api/connections/${platform}`, { method: "DELETE" });
@@ -888,34 +931,24 @@ function initConnectPages() {
         return;
       }
 
-      const icon = document.getElementById("oauth-icon");
-      const title = document.getElementById("oauth-title");
-      const subtitle = document.getElementById("oauth-subtitle");
-      const statusEl = document.getElementById("oauth-status");
-      if (icon) icon.src = `../img/${platform === "x" ? "x" : platform}.svg`;
-      if (title) title.textContent = `Connect ${PLATFORM_LABELS[platform]}`;
-      if (subtitle) {
-        subtitle.textContent = "You will be redirected to Meta to authorize Project Alpha.";
-      }
-      if (statusEl) statusEl.textContent = "";
-      openModal("oauth-modal");
+      startOAuthFlow(platform, { mode: "connect" });
+    });
 
-      const confirmBtn = document.getElementById("oauth-confirm-btn");
-      confirmBtn.onclick = async () => {
-        setButtonLoading(confirmBtn, true);
-        if (statusEl) statusEl.textContent = "Creating secure OAuth session…";
+    reconnectBtn?.addEventListener("click", async () => {
+      const platform = card.dataset.platform;
+      const state = cachedConnections[platform] || {};
+      if (state.id) {
         try {
-          const data = await AlphaAPI.api("/api/oauth/meta/start", {
-            method: "POST",
-            body: { platform }
-          });
-          window.location.href = data.url;
-        } catch (err) {
-          setButtonLoading(confirmBtn, false);
-          if (statusEl) statusEl.textContent = err.message;
-          showToast(err.message || "Could not start OAuth.", "error");
+          await AlphaAPI.api(`/api/connections/${state.id}/reconnect`, { method: "POST" });
+        } catch {
+          /* start flow anyway */
         }
-      };
+      }
+      startOAuthFlow(platform, {
+        mode: "reconnect",
+        connectionId: state.id || null,
+        accountId: state.accountId || null
+      });
     });
   });
 }
@@ -923,34 +956,143 @@ function initConnectPages() {
 function renderConnections() {
   document.querySelectorAll(".connect-card").forEach((card) => {
     const platform = card.dataset.platform;
-    const state = cachedConnections[platform] || { connected: false, supported: false };
+    const state = cachedConnections[platform] || {
+      connected: false,
+      supported: true,
+      configured: false
+    };
     const status = card.querySelector("[data-status]");
     const account = card.querySelector("[data-account]");
+    const configEl = card.querySelector("[data-config]");
     const btn = card.querySelector(".connect-btn");
+    const reconnectBtn = card.querySelector(".reconnect-btn");
 
     card.classList.toggle("connected", Boolean(state.connected));
+    card.classList.toggle("needs-reconnect", Boolean(state.reconnectRequired));
+
     if (status) {
-      status.textContent = state.connected ? "Connected" : state.supported ? "Not connected" : "Unavailable";
-      status.classList.toggle("connected", Boolean(state.connected));
+      if (state.reconnectRequired) status.textContent = "Reconnect required";
+      else if (state.connected) {
+        status.textContent =
+          state.accountCount > 1 ? `Connected (${state.accountCount})` : "Connected";
+      } else if (!state.configured) status.textContent = "Credentials not configured";
+      else status.textContent = "Not connected";
+      status.classList.toggle("connected", Boolean(state.connected) && !state.reconnectRequired);
     }
+
     if (account) {
       const label = state.accountUsername || state.accountName || "";
       account.hidden = !state.connected;
       account.textContent = label;
     }
+
+    if (configEl) {
+      configEl.hidden = state.configured !== false || state.connected;
+      configEl.textContent = state.configured
+        ? ""
+        : "Add provider env vars on the server to enable live OAuth.";
+    }
+
     if (btn) {
-      if (!state.supported) {
-        btn.textContent = "Unavailable";
-        btn.disabled = true;
+      btn.disabled = false;
+      if (state.connected && !state.reconnectRequired) {
+        btn.textContent = "Disconnect";
+        btn.classList.add("btn-glow");
+        btn.classList.remove("btn-outline-glow");
+      } else {
+        btn.textContent = state.configured ? "Connect" : "Connect (needs keys)";
         btn.classList.remove("btn-glow");
         btn.classList.add("btn-outline-glow");
-      } else {
-        btn.disabled = false;
-        btn.textContent = state.connected ? "Disconnect" : "Connect";
-        btn.classList.toggle("btn-glow", state.connected);
-        btn.classList.toggle("btn-outline-glow", !state.connected);
       }
     }
+
+    if (reconnectBtn) {
+      reconnectBtn.hidden = !state.reconnectRequired;
+    }
+  });
+
+  renderConnectedAccountsList();
+}
+
+function renderConnectedAccountsList() {
+  const list = document.getElementById("connected-accounts-list");
+  const empty = document.getElementById("connected-accounts-empty");
+  if (!list) return;
+
+  const accounts = Object.values(cachedConnections)
+    .flatMap((p) => p.accounts || [])
+    .sort((a, b) => a.platform.localeCompare(b.platform));
+
+  list.innerHTML = "";
+  if (!accounts.length) {
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+
+  accounts.forEach((acc) => {
+    const li = document.createElement("li");
+    li.className = "scheduled-post-item";
+    const expiry = acc.tokenExpiresAt
+      ? `Expires ${new Date(acc.tokenExpiresAt).toLocaleString()}`
+      : "No expiry on record";
+    li.innerHTML = `
+      <div class="scheduled-post-main">
+        <span class="platform-pill platform-${escapeHtml(acc.platform)}">${escapeHtml(PLATFORM_LABELS[acc.platform] || acc.platform)}</span>
+        <span class="status-badge status-${escapeHtml(acc.status || "active")}">${escapeHtml(acc.status || "active")}</span>
+        <strong>${escapeHtml(acc.accountName || acc.accountId)}</strong>
+        <small>${escapeHtml(acc.accountUsername || "")} · ${escapeHtml(expiry)}</small>
+      </div>
+      <div class="scheduled-post-actions">
+        ${
+          acc.reconnectRequired
+            ? `<button type="button" class="btn btn-outline-glow btn-sm" data-reconnect-id="${acc.id}" data-platform="${acc.platform}">Reconnect</button>`
+            : `<button type="button" class="btn btn-outline-glow btn-sm" data-refresh-id="${acc.id}">Refresh token</button>`
+        }
+        <button type="button" class="btn btn-outline-glow btn-sm danger" data-disconnect-id="${acc.id}">Disconnect</button>
+      </div>`;
+    list.appendChild(li);
+  });
+
+  list.querySelectorAll("[data-disconnect-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await AlphaAPI.api(`/api/connections/account/${btn.getAttribute("data-disconnect-id")}`, {
+          method: "DELETE"
+        });
+        showToast("Account disconnected", "info");
+        await refreshAllData();
+      } catch (err) {
+        showToast(err.message || "Disconnect failed.", "error");
+      }
+    });
+  });
+
+  list.querySelectorAll("[data-refresh-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await AlphaAPI.api(`/api/connections/${btn.getAttribute("data-refresh-id")}/refresh`, {
+          method: "POST"
+        });
+        showToast("Token refreshed");
+        await refreshAllData();
+      } catch (err) {
+        showToast(err.message || "Refresh failed.", "error");
+      }
+    });
+  });
+
+  list.querySelectorAll("[data-reconnect-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-reconnect-id");
+      const platform = btn.getAttribute("data-platform");
+      try {
+        await AlphaAPI.api(`/api/connections/${id}/reconnect`, { method: "POST" });
+      } catch {
+        /* continue */
+      }
+      startOAuthFlow(platform, { mode: "reconnect", connectionId: id });
+    });
   });
 }
 

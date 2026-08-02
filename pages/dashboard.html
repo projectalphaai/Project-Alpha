@@ -290,43 +290,71 @@
             <!-- Social Connections -->
             <section id="connect" class="dashboard-section" aria-labelledby="connect-heading">
                 <h2 id="connect-heading">Social Connections</h2>
-                <p class="section-lead">Connect Instagram and Facebook with real Meta Graph API OAuth. LinkedIn, X, and YouTube are unavailable in Sprint 1.</p>
+                <p class="section-lead">Production OAuth for Instagram, Facebook Pages, YouTube, LinkedIn, and X. Tokens are encrypted in PostgreSQL. If a provider’s credentials are missing, Connect returns a clear configuration error — never a fake connection.</p>
                 <div class="connect-grid" id="connect-grid">
                     <div class="connect-card glass-panel" id="instagram" data-platform="instagram">
                         <img src="../img/instagram.svg" alt="" width="32" height="32">
                         <h3>Instagram</h3>
                         <span class="connect-status" data-status>Not connected</span>
                         <p class="connect-meta" data-account hidden></p>
-                        <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                        <p class="connect-meta" data-config hidden></p>
+                        <div class="connect-actions">
+                            <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                            <button type="button" class="btn btn-outline-glow btn-sm reconnect-btn" data-action="reconnect" hidden>Reconnect</button>
+                        </div>
                     </div>
                     <div class="connect-card glass-panel" id="facebook" data-platform="facebook">
                         <img src="../img/facebook.svg" alt="" width="32" height="32">
-                        <h3>Facebook</h3>
+                        <h3>Facebook Pages</h3>
                         <span class="connect-status" data-status>Not connected</span>
                         <p class="connect-meta" data-account hidden></p>
-                        <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
-                    </div>
-                    <div class="connect-card glass-panel" id="linkedin" data-platform="linkedin">
-                        <img src="../img/linkedin.svg" alt="" width="32" height="32">
-                        <h3>LinkedIn</h3>
-                        <span class="connect-status" data-status>Not connected</span>
-                        <p class="connect-meta" data-account hidden></p>
-                        <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
-                    </div>
-                    <div class="connect-card glass-panel" id="x" data-platform="x">
-                        <img src="../img/x.svg" alt="" width="32" height="32">
-                        <h3>X</h3>
-                        <span class="connect-status" data-status>Not connected</span>
-                        <p class="connect-meta" data-account hidden></p>
-                        <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                        <p class="connect-meta" data-config hidden></p>
+                        <div class="connect-actions">
+                            <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                            <button type="button" class="btn btn-outline-glow btn-sm reconnect-btn" data-action="reconnect" hidden>Reconnect</button>
+                        </div>
                     </div>
                     <div class="connect-card glass-panel" id="youtube" data-platform="youtube">
                         <img src="../img/youtube.svg" alt="" width="32" height="32">
                         <h3>YouTube</h3>
                         <span class="connect-status" data-status>Not connected</span>
                         <p class="connect-meta" data-account hidden></p>
-                        <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                        <p class="connect-meta" data-config hidden></p>
+                        <div class="connect-actions">
+                            <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                            <button type="button" class="btn btn-outline-glow btn-sm reconnect-btn" data-action="reconnect" hidden>Reconnect</button>
+                        </div>
                     </div>
+                    <div class="connect-card glass-panel" id="linkedin" data-platform="linkedin">
+                        <img src="../img/linkedin.svg" alt="" width="32" height="32">
+                        <h3>LinkedIn</h3>
+                        <span class="connect-status" data-status>Not connected</span>
+                        <p class="connect-meta" data-account hidden></p>
+                        <p class="connect-meta" data-config hidden></p>
+                        <div class="connect-actions">
+                            <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                            <button type="button" class="btn btn-outline-glow btn-sm reconnect-btn" data-action="reconnect" hidden>Reconnect</button>
+                        </div>
+                    </div>
+                    <div class="connect-card glass-panel" id="x" data-platform="x">
+                        <img src="../img/x.svg" alt="" width="32" height="32">
+                        <h3>X</h3>
+                        <span class="connect-status" data-status>Not connected</span>
+                        <p class="connect-meta" data-account hidden></p>
+                        <p class="connect-meta" data-config hidden></p>
+                        <div class="connect-actions">
+                            <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                            <button type="button" class="btn btn-outline-glow btn-sm reconnect-btn" data-action="reconnect" hidden>Reconnect</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel nested-panel" style="margin-top:18px">
+                    <div class="panel-header">
+                        <h3>Connected accounts</h3>
+                        <span class="panel-meta">Multiple accounts per platform</span>
+                    </div>
+                    <ul class="scheduled-posts-list" id="connected-accounts-list"></ul>
+                    <p class="empty-state" id="connected-accounts-empty">No accounts connected yet.</p>
                 </div>
             </section>
 
@@ -791,7 +819,7 @@
         </main>
     </div>
 
-    <!-- OAuth simulation modal -->
+    <!-- OAuth connect modal -->
     <div class="pa-modal" id="oauth-modal" hidden>
         <div class="pa-modal-backdrop" data-close-modal="oauth-modal"></div>
         <div class="pa-modal-dialog glass-panel" role="dialog" aria-modal="true" aria-labelledby="oauth-title">
@@ -800,25 +828,25 @@
                 <img id="oauth-icon" src="../img/instagram.svg" alt="" width="40" height="40">
                 <div>
                     <h2 id="oauth-title">Connect account</h2>
-                    <p id="oauth-subtitle">Authorize Project Alpha to manage posts.</p>
+                    <p id="oauth-subtitle">Authorize Project Alpha with secure OAuth.</p>
                 </div>
             </div>
             <div class="oauth-steps" id="oauth-steps">
                 <p class="oauth-step active" data-oauth-step="1">1. Review permissions</p>
-                <p class="oauth-step" data-oauth-step="2">2. Simulate authorization</p>
-                <p class="oauth-step" data-oauth-step="3">3. Connection complete</p>
+                <p class="oauth-step" data-oauth-step="2">2. Authorize with the provider</p>
+                <p class="oauth-step" data-oauth-step="3">3. Encrypted tokens saved</p>
             </div>
             <ul class="oauth-permissions">
-                <li>Read basic profile information</li>
-                <li>Publish and schedule content</li>
-                <li>Read engagement metrics (demo)</li>
+                <li>Read basic profile / page information</li>
+                <li>Publish and schedule content (where permitted)</li>
+                <li>Refresh tokens when the provider supports it</li>
             </ul>
-            <p class="oauth-note">You will leave Project Alpha and authorize access on Meta. Tokens are encrypted at rest in the database.</p>
+            <p class="oauth-note">You will leave Project Alpha to authorize access. Access and refresh tokens are encrypted at rest in PostgreSQL and never exposed to the browser.</p>
             <div class="oauth-status" id="oauth-status" role="status" aria-live="polite"></div>
             <div class="pa-modal-actions">
                 <button type="button" class="btn btn-outline-glow btn-sm" data-close-modal="oauth-modal">Cancel</button>
                 <button type="button" class="btn btn-glow btn-sm" id="oauth-confirm-btn">
-                    <span class="btn-label">Continue to Meta</span>
+                    <span class="btn-label">Continue to provider</span>
                     <span class="btn-spinner" hidden aria-hidden="true"></span>
                 </button>
             </div>

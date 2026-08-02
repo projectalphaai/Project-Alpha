@@ -1864,6 +1864,24 @@ textarea:focus-visible,
     margin-top: 4px;
 }
 
+.connect-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.connect-card.needs-reconnect {
+    border-color: rgba(251, 191, 36, 0.45);
+}
+
+.activity-dot.type-oauth_connect,
+.activity-dot.type-oauth_reconnect { background: #34d399; }
+.activity-dot.type-oauth_disconnect { background: #f87171; }
+.activity-dot.type-oauth_refresh { background: #60a5fa; }
+.activity-dot.type-oauth_expire,
+.activity-dot.type-oauth_start { background: #fbbf24; }
+
 .platform-pill {
     display: inline-flex;
     align-items: center;

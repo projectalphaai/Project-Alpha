@@ -8,6 +8,7 @@ const userSelect = {
   name: true,
   company: true,
   timezone: true,
+  role: true,
   createdAt: true
 };
 
@@ -16,7 +17,8 @@ export function signSession(user) {
     {
       sub: user.id,
       email: user.email,
-      name: user.name
+      name: user.name,
+      role: user.role || "owner"
     },
     config.jwtSecret,
     {

@@ -19,7 +19,7 @@ async function start() {
 
   app.listen(config.port, () => {
     console.log(`Project Alpha API listening on ${config.appUrl} (port ${config.port})`);
-    console.log(`Database: PostgreSQL | Sprint: 4`);
+    console.log(`Database: PostgreSQL | Sprint: 5`);
     workerHandle = startPublisherWorker();
   });
 }

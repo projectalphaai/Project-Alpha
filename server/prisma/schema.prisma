@@ -7,7 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Core authenticated account (Sprint 2 foundation)
+/// Core authenticated account
+/// role: owner | admin | member (RBAC)
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -15,6 +16,7 @@ model User {
   name         String
   company      String   @default("")
   timezone     String   @default("UTC")
+  role         String   @default("owner")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -41,6 +43,11 @@ model ConnectedAccount {
   pageAccessTokenEnc String    @default("")
   scopes             String    @default("")
   metadataJson       String    @default("{}")
+  /// active | expired | revoked
+  status             String    @default("active")
+  reconnectRequired  Boolean   @default(false)
+  lastRefreshedAt    DateTime?
+  lastValidatedAt    DateTime?
   connectedAt        DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -48,10 +55,10 @@ model ConnectedAccount {
 
   @@unique([userId, platform, accountId])
   @@index([userId, platform])
+  @@index([userId, status])
 }
 
 /// Scheduler + publishing queue (Sprint 4)
-/// status: draft | scheduled | processing | published | failed | cancelled
 model ScheduledPost {
   id             String    @id @default(cuid())
   userId         String
@@ -77,7 +84,6 @@ model ScheduledPost {
   @@index([userId, status])
 }
 
-/// Saved AI-generated content drafts (Sprint 3)
 model Draft {
   id           String    @id @default(cuid())
   userId       String
@@ -101,19 +107,22 @@ model Draft {
 }
 
 model OAuthState {
-  id        String   @id @default(cuid())
-  userId    String
-  platform  String
-  state     String   @unique
-  createdAt DateTime @default(now())
-  expiresAt DateTime
+  id          String   @id @default(cuid())
+  userId      String
+  platform    String
+  state       String   @unique
+  /// connect | reconnect
+  mode        String   @default("connect")
+  codeVerifier String  @default("")
+  metaJson    String   @default("{}")
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
-/// Durable activity feed for scheduler / publish events (Sprint 4)
 model ActivityLog {
   id        String   @id @default(cuid())
   userId    String

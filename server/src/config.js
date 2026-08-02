@@ -13,14 +13,19 @@ function requireEnv(name, { optional = false } = {}) {
   return value;
 }
 
+function optionalEnv(name, fallback = "") {
+  return (process.env[name] || fallback).trim();
+}
+
 const nodeEnv = process.env.NODE_ENV || "development";
 const isProd = nodeEnv === "production";
+const appUrl = (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
 
 export const config = {
   nodeEnv,
   isProd,
   port: Number(process.env.PORT || 3000),
-  appUrl: (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, ""),
+  appUrl,
   databaseUrl: requireEnv("DATABASE_URL"),
   jwtSecret: requireEnv("JWT_SECRET"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "14d",
@@ -30,8 +35,24 @@ export const config = {
     appSecret: requireEnv("META_APP_SECRET", { optional: !isProd }),
     graphVersion: process.env.META_GRAPH_VERSION || "v21.0",
     redirectUri:
-      process.env.META_OAUTH_REDIRECT_URI ||
-      `${(process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "")}/api/oauth/meta/callback`
+      optionalEnv("META_OAUTH_REDIRECT_URI") || `${appUrl}/api/oauth/meta/callback`
+  },
+  google: {
+    clientId: optionalEnv("GOOGLE_CLIENT_ID"),
+    clientSecret: optionalEnv("GOOGLE_CLIENT_SECRET"),
+    redirectUri:
+      optionalEnv("YOUTUBE_OAUTH_REDIRECT_URI") || `${appUrl}/api/oauth/youtube/callback`
+  },
+  linkedin: {
+    clientId: optionalEnv("LINKEDIN_CLIENT_ID"),
+    clientSecret: optionalEnv("LINKEDIN_CLIENT_SECRET"),
+    redirectUri:
+      optionalEnv("LINKEDIN_OAUTH_REDIRECT_URI") || `${appUrl}/api/oauth/linkedin/callback`
+  },
+  x: {
+    clientId: optionalEnv("X_CLIENT_ID"),
+    clientSecret: optionalEnv("X_CLIENT_SECRET"),
+    redirectUri: optionalEnv("X_OAUTH_REDIRECT_URI") || `${appUrl}/api/oauth/x/callback`
   },
   openai: {
     // Never log or return this value. Optional in non-production so the API can boot without a key.
@@ -52,4 +73,14 @@ export function assertRuntimeSecrets() {
   if (!config.tokenEncryptionKey || config.tokenEncryptionKey.length < 32) {
     throw new Error("TOKEN_ENCRYPTION_KEY must be at least 32 characters.");
   }
+}
+
+export function oauthProviderStatus() {
+  return {
+    instagram: Boolean(config.meta.appId && config.meta.appSecret),
+    facebook: Boolean(config.meta.appId && config.meta.appSecret),
+    youtube: Boolean(config.google.clientId && config.google.clientSecret),
+    linkedin: Boolean(config.linkedin.clientId && config.linkedin.clientSecret),
+    x: Boolean(config.x.clientId && config.x.clientSecret)
+  };
 }
