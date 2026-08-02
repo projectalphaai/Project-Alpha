@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  company      String   @default("")
+  timezone     String   @default("UTC")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  connectedAccounts ConnectedAccount[]
+  scheduledPosts    ScheduledPost[]
+  contentDrafts     ContentDraft[]
+  oauthStates       OAuthState[]
+}
+
+model ConnectedAccount {
+  id                String    @id @default(cuid())
+  userId            String
+  platform          String
+  accountId         String
+  accountName       String
+  accountUsername   String    @default("")
+  accessTokenEnc    String
+  refreshTokenEnc   String    @default("")
+  tokenExpiresAt    DateTime?
+  pageId            String    @default("")
+  pageAccessTokenEnc String   @default("")
+  scopes            String    @default("")
+  metadataJson      String    @default("{}")
+  connectedAt       DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform, accountId])
+  @@index([userId, platform])
+}
+
+model ScheduledPost {
+  id        String   @id @default(cuid())
+  userId    String
+  platform  String
+  caption   String
+  mediaUrl  String   @default("")
+  scheduledAt DateTime
+  status    String   @default("scheduled")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scheduledAt])
+}
+
+model ContentDraft {
+  id        String   @id @default(cuid())
+  userId    String
+  platform  String
+  goal      String
+  tone      String
+  topic     String
+  caption   String
+  hashtags  String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model OAuthState {
+  id        String   @id @default(cuid())
+  userId    String
+  platform  String
+  state     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

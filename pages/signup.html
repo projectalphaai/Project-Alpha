@@ -61,11 +61,17 @@
                 <span class="field-error" id="signup-email-error" role="alert"></span>
 
                 <label for="signup-password">Password</label>
-                <input type="password" id="signup-password" name="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters" aria-describedby="signup-password-error">
+                <div class="password-field">
+                    <input type="password" id="signup-password" name="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters" aria-describedby="signup-password-error">
+                    <button type="button" class="password-toggle" data-toggle-password="signup-password" aria-label="Show password" aria-pressed="false">Show</button>
+                </div>
                 <span class="field-error" id="signup-password-error" role="alert"></span>
 
                 <label for="signup-confirm">Confirm password</label>
-                <input type="password" id="signup-confirm" name="confirm" autocomplete="new-password" required minlength="8" placeholder="Repeat password" aria-describedby="signup-confirm-error">
+                <div class="password-field">
+                    <input type="password" id="signup-confirm" name="confirm" autocomplete="new-password" required minlength="8" placeholder="Repeat password" aria-describedby="signup-confirm-error">
+                    <button type="button" class="password-toggle" data-toggle-password="signup-confirm" aria-label="Show password" aria-pressed="false">Show</button>
+                </div>
                 <span class="field-error" id="signup-confirm-error" role="alert"></span>
 
                 <div class="auth-form-error" id="signup-form-error" hidden role="alert"></div>
@@ -77,10 +83,12 @@
             </form>
 
             <p class="auth-switch">Already have an account? <a href="./login.html">Log in</a></p>
-            <p class="auth-demo-hint">Demo only: accounts are saved in localStorage on this device. No real email is sent.</p>
+            <p class="auth-demo-hint">Your account is saved securely in the Project Alpha database with a hashed password.</p>
         </div>
     </main>
 
+    <script src="../js/config.js" defer></script>
+    <script src="../js/api.js" defer></script>
     <script src="../js/auth.js" defer></script>
     <script src="../js/auth-pages.js" defer></script>
 </body>
