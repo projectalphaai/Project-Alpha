@@ -57,9 +57,10 @@ export function createApp() {
     res.json({
       ok: true,
       service: "project-alpha",
-      sprint: 2,
+      sprint: 3,
       env: config.nodeEnv,
-      database: "postgresql"
+      database: "postgresql",
+      openaiConfigured: Boolean(config.openai.apiKey)
     });
   });
 

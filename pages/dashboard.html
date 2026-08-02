@@ -369,20 +369,39 @@
                             <input type="text" id="ai-topic" maxlength="160" placeholder="e.g. AI content scheduling for agencies" required>
                             <span class="field-error" id="ai-topic-error" hidden>Enter a topic (at least 3 characters).</span>
                         </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="ai-audience">Audience <span class="optional">(optional)</span></label>
+                                <input type="text" id="ai-audience" maxlength="120" placeholder="e.g. agency founders">
+                            </div>
+                            <div class="form-field">
+                                <label for="ai-language">Language <span class="optional">(optional)</span></label>
+                                <input type="text" id="ai-language" maxlength="32" value="en" placeholder="en">
+                            </div>
+                        </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-glow" id="ai-generate-btn">
                                 <span class="btn-label">Generate</span>
                                 <span class="btn-spinner" hidden aria-hidden="true"></span>
                             </button>
                         </div>
+                        <div class="form-error" id="ai-form-error" hidden role="alert"></div>
                     </form>
                     <div class="ai-output-panel" id="ai-output-panel" hidden>
                         <div class="panel-header">
                             <h3>Generated content</h3>
                             <div class="ai-output-actions">
-                                <button type="button" class="btn btn-outline-glow btn-sm" id="ai-copy-btn">Copy</button>
-                                <button type="button" class="btn btn-glow btn-sm" id="ai-save-draft-btn">Save Draft</button>
+                                <button type="button" class="btn btn-outline-glow btn-sm" id="ai-copy-caption-btn">Copy caption</button>
+                                <button type="button" class="btn btn-outline-glow btn-sm" id="ai-copy-hashtags-btn">Copy hashtags</button>
+                                <button type="button" class="btn btn-glow btn-sm" id="ai-save-draft-btn">
+                                    <span class="btn-label">Save Draft</span>
+                                    <span class="btn-spinner" hidden aria-hidden="true"></span>
+                                </button>
                             </div>
+                        </div>
+                        <div class="ai-caption-block">
+                            <h4>Short hook</h4>
+                            <p id="ai-hook-output" tabindex="0"></p>
                         </div>
                         <div class="ai-caption-block">
                             <h4>Caption</h4>
@@ -392,7 +411,12 @@
                             <h4>Hashtags</h4>
                             <p id="ai-hashtag-output" tabindex="0"></p>
                         </div>
-                        <div class="form-success" id="ai-draft-success" hidden role="status">Draft saved locally.</div>
+                        <div class="ai-caption-block">
+                            <h4>Call to action</h4>
+                            <p id="ai-cta-output" tabindex="0"></p>
+                        </div>
+                        <div class="form-success" id="ai-success" hidden role="status">Content generated successfully.</div>
+                        <div class="form-success" id="ai-draft-success" hidden role="status">Draft saved to your account.</div>
                     </div>
                     <div class="ai-drafts glass-panel nested-panel">
                         <div class="panel-header">

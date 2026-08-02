@@ -828,7 +828,7 @@ function initOAuthQueryFeedback() {
   history.replaceState(null, "", clean);
 }
 
-/* ---------- OpenAI generator ---------- */
+/* ---------- OpenAI generator (Sprint 3) ---------- */
 
 function initAITools() {
   const form = document.getElementById("ai-generator-form");
@@ -838,17 +838,39 @@ function initAITools() {
   const goal = document.getElementById("ai-goal");
   const tone = document.getElementById("ai-tone");
   const topic = document.getElementById("ai-topic");
+  const audience = document.getElementById("ai-audience");
+  const language = document.getElementById("ai-language");
   const generateBtn = document.getElementById("ai-generate-btn");
   const outputPanel = document.getElementById("ai-output-panel");
   const captionOut = document.getElementById("ai-caption-output");
   const hashtagOut = document.getElementById("ai-hashtag-output");
-  const copyBtn = document.getElementById("ai-copy-btn");
+  const hookOut = document.getElementById("ai-hook-output");
+  const ctaOut = document.getElementById("ai-cta-output");
+  const copyCaptionBtn = document.getElementById("ai-copy-caption-btn");
+  const copyHashtagsBtn = document.getElementById("ai-copy-hashtags-btn");
   const saveDraftBtn = document.getElementById("ai-save-draft-btn");
   const draftSuccess = document.getElementById("ai-draft-success");
+  const successEl = document.getElementById("ai-success");
+  const formError = document.getElementById("ai-form-error");
+
+  const setFormError = (message) => {
+    if (!formError) return;
+    if (!message) {
+      formError.hidden = true;
+      formError.textContent = "";
+      return;
+    }
+    formError.hidden = false;
+    formError.textContent = message;
+  };
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     ["ai-platform-error", "ai-goal-error", "ai-tone-error", "ai-topic-error"].forEach(hideError);
+    setFormError("");
+    if (successEl) successEl.hidden = true;
+    if (draftSuccess) draftSuccess.hidden = true;
+
     let valid = true;
     if (!platform.value) {
       showError("ai-platform-error");
@@ -867,49 +889,79 @@ function initAITools() {
       valid = false;
     }
     if (!valid) {
+      setFormError("Please complete all required fields.");
       showToast("Please complete all generator fields.", "error");
       return;
     }
 
     setButtonLoading(generateBtn, true);
     if (outputPanel) outputPanel.hidden = false;
-    if (captionOut) captionOut.textContent = "Generating with OpenAI…";
+    if (captionOut) captionOut.textContent = "Generating…";
     if (hashtagOut) hashtagOut.textContent = "…";
+    if (hookOut) hookOut.textContent = "…";
+    if (ctaOut) ctaOut.textContent = "…";
+
     try {
-      const data = await AlphaAPI.api("/api/ai/generate", {
+      const data = await AlphaAPI.api("/api/ai/generate-content", {
         method: "POST",
         body: {
           platform: platform.value,
-          goal: goal.value,
+          contentGoal: goal.value,
           tone: tone.value,
-          topic: topic.value.trim()
+          topic: topic.value.trim(),
+          audience: (audience?.value || "").trim(),
+          language: (language?.value || "en").trim() || "en"
         }
       });
-      lastAiResult = data.result;
-      if (captionOut) captionOut.textContent = data.result.caption;
-      if (hashtagOut) hashtagOut.textContent = data.result.hashtags;
+
+      lastAiResult = {
+        platform: data.platform,
+        contentGoal: goal.value,
+        tone: tone.value,
+        topic: topic.value.trim(),
+        audience: (audience?.value || "").trim(),
+        language: (language?.value || "en").trim() || "en",
+        caption: data.caption,
+        hashtags: data.hashtags,
+        shortHook: data.shortHook,
+        callToAction: data.callToAction,
+        generatedAt: data.generatedAt
+      };
+
+      if (captionOut) captionOut.textContent = data.caption;
+      if (hashtagOut) hashtagOut.textContent = data.hashtags;
+      if (hookOut) hookOut.textContent = data.shortHook;
+      if (ctaOut) ctaOut.textContent = data.callToAction;
+      if (successEl) successEl.hidden = false;
       showToast("Content generated");
     } catch (err) {
+      lastAiResult = null;
       if (captionOut) captionOut.textContent = "";
       if (hashtagOut) hashtagOut.textContent = "";
+      if (hookOut) hookOut.textContent = "";
+      if (ctaOut) ctaOut.textContent = "";
+      setFormError(err.message || "Generation failed.");
       showToast(err.message || "Generation failed.", "error");
     } finally {
       setButtonLoading(generateBtn, false);
     }
   });
 
-  copyBtn?.addEventListener("click", async () => {
-    if (!lastAiResult) {
+  const copyText = async (value, label) => {
+    if (!value) {
       showToast("Generate content first.", "error");
       return;
     }
     try {
-      await navigator.clipboard.writeText(`${lastAiResult.caption}\n\n${lastAiResult.hashtags}`);
-      showToast("Copied caption and hashtags");
+      await navigator.clipboard.writeText(value);
+      showToast(`${label} copied`);
     } catch {
       showToast("Could not copy — select text manually.", "error");
     }
-  });
+  };
+
+  copyCaptionBtn?.addEventListener("click", () => copyText(lastAiResult?.caption, "Caption"));
+  copyHashtagsBtn?.addEventListener("click", () => copyText(lastAiResult?.hashtags, "Hashtags"));
 
   saveDraftBtn?.addEventListener("click", async () => {
     if (!lastAiResult) {
@@ -943,7 +995,10 @@ async function renderDrafts() {
     const data = await AlphaAPI.api("/api/ai/drafts");
     list.innerHTML = "";
     if (!data.drafts?.length) {
-      if (empty) empty.hidden = false;
+      if (empty) {
+        empty.hidden = false;
+        empty.textContent = "No drafts yet. Generate content and save one.";
+      }
       return;
     }
     if (empty) empty.hidden = true;
@@ -952,8 +1007,22 @@ async function renderDrafts() {
       li.className = "draft-item";
       li.innerHTML = `<span class="platform-pill platform-${escapeHtml(draft.platform)}">${escapeHtml(PLATFORM_LABELS[draft.platform] || draft.platform)}</span>
         <div><strong>${escapeHtml(draft.topic)}</strong>
-        <small>${escapeHtml(draft.caption.slice(0, 80))}…</small></div>`;
+        <small>${escapeHtml((draft.caption || "").slice(0, 80))}…</small></div>
+        <button type="button" class="btn btn-outline-glow btn-sm danger" data-delete-draft="${escapeHtml(draft.id)}">Delete</button>`;
       list.appendChild(li);
+    });
+
+    list.querySelectorAll("[data-delete-draft]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-delete-draft");
+        try {
+          await AlphaAPI.api(`/api/ai/drafts/${id}`, { method: "DELETE" });
+          showToast("Draft deleted", "info");
+          await renderDrafts();
+        } catch (err) {
+          showToast(err.message || "Could not delete draft.", "error");
+        }
+      });
     });
   } catch {
     if (empty) {

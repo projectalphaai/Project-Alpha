@@ -34,6 +34,7 @@ export const config = {
       `${(process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "")}/api/oauth/meta/callback`
   },
   openai: {
+    // Never log or return this value. Optional in non-production so the API can boot without a key.
     apiKey: requireEnv("OPENAI_API_KEY", { optional: !isProd }),
     model: process.env.OPENAI_MODEL || "gpt-4o-mini"
   },

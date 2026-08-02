@@ -1,33 +1,75 @@
 import { Router } from "express";
-import OpenAI from "openai";
+import rateLimit from "express-rate-limit";
 import { z } from "zod";
-import { config } from "../config.js";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { generateSocialContent } from "../lib/openai.js";
 
 const router = Router();
 
-const generateSchema = z.object({
-  platform: z.enum(["instagram", "facebook", "linkedin", "x", "youtube"]),
-  goal: z.enum(["awareness", "engagement", "leads", "launch", "education"]),
-  tone: z.enum(["professional", "friendly", "bold", "witty", "inspirational"]),
-  topic: z.string().trim().min(3).max(160)
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: Number(process.env.AI_RATE_LIMIT || 20),
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { ok: false, error: "AI rate limit exceeded. Please wait and try again." }
 });
 
-function assertOpenAIConfigured() {
-  if (!config.openai.apiKey) {
-    const err = new Error("OpenAI is not configured. Set OPENAI_API_KEY in your environment.");
-    err.status = 503;
-    throw err;
-  }
+const platforms = ["instagram", "facebook", "linkedin", "x", "youtube"];
+const goals = ["awareness", "engagement", "leads", "launch", "education"];
+const tones = ["professional", "friendly", "bold", "witty", "inspirational"];
+
+const generateSchema = z.object({
+  platform: z.enum(platforms, { errorMap: () => ({ message: "Select a valid platform." }) }),
+  contentGoal: z.enum(goals, { errorMap: () => ({ message: "Select a valid content goal." }) }),
+  tone: z.enum(tones, { errorMap: () => ({ message: "Select a valid tone." }) }),
+  topic: z.string().trim().min(3, "Topic must be at least 3 characters.").max(160, "Topic is too long."),
+  audience: z.string().trim().max(120, "Audience is too long.").optional().default(""),
+  language: z
+    .string()
+    .trim()
+    .min(2)
+    .max(32)
+    .optional()
+    .default("en")
+});
+
+const draftSaveSchema = generateSchema.extend({
+  caption: z.string().trim().min(1).max(4000),
+  hashtags: z.string().trim().min(1).max(1000),
+  shortHook: z.string().trim().min(1).max(280),
+  callToAction: z.string().trim().min(1).max(280),
+  generatedAt: z.string().datetime().optional()
+});
+
+function serializeDraft(draft) {
+  return {
+    id: draft.id,
+    platform: draft.platform,
+    contentGoal: draft.contentGoal,
+    tone: draft.tone,
+    topic: draft.topic,
+    audience: draft.audience || "",
+    language: draft.language || "en",
+    caption: draft.caption,
+    hashtags: draft.hashtags,
+    shortHook: draft.shortHook || "",
+    callToAction: draft.callToAction || "",
+    generatedAt: draft.generatedAt ? draft.generatedAt.toISOString() : null,
+    savedAt: draft.createdAt.toISOString()
+  };
 }
 
-function getClient() {
-  assertOpenAIConfigured();
-  return new OpenAI({ apiKey: config.openai.apiKey });
+function safeAiError(err, res) {
+  const status = err.status || 502;
+  const message =
+    status === 503 || status === 429 || status === 504 || status === 400
+      ? err.message
+      : "AI content generation failed. Please try again.";
+  return res.status(status).json({ ok: false, error: message });
 }
 
-router.post("/generate", requireAuth, async (req, res, next) => {
+router.post("/generate-content", requireAuth, aiLimiter, async (req, res) => {
   try {
     const parsed = generateSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -37,85 +79,22 @@ router.post("/generate", requireAuth, async (req, res, next) => {
       });
     }
 
-    const { platform, goal, tone, topic } = parsed.data;
-    const client = getClient();
-
-    const completion = await client.chat.completions.create({
-      model: config.openai.model,
-      temperature: 0.8,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are Project Alpha AI, an expert social media copywriter. Return strict JSON with keys caption (string) and hashtags (string of space-separated hashtags). No markdown."
-        },
-        {
-          role: "user",
-          content: `Write a ${tone} ${platform} post for goal "${goal}" about: ${topic}.
-Caption should be ready to publish. Include a clear hook and CTA.
-Provide 6-10 relevant hashtags in the hashtags field.`
-        }
-      ]
-    });
-
-    const raw = completion.choices?.[0]?.message?.content || "{}";
-    let payload;
-    try {
-      payload = JSON.parse(raw);
-    } catch {
-      return res.status(502).json({ ok: false, error: "OpenAI returned an unreadable response." });
-    }
-
-    const caption = String(payload.caption || "").trim();
-    const hashtags = String(payload.hashtags || "").trim();
-    if (!caption || !hashtags) {
-      return res.status(502).json({ ok: false, error: "OpenAI response was incomplete." });
-    }
-
-    return res.json({
-      ok: true,
-      result: {
-        platform,
-        goal,
-        tone,
-        topic,
-        caption,
-        hashtags,
-        model: completion.model
-      }
-    });
+    const result = await generateSocialContent(parsed.data);
+    return res.json({ ok: true, ...result });
   } catch (err) {
-    if (err?.status === 503) {
-      return res.status(503).json({ ok: false, error: err.message });
-    }
-    if (err?.status === 401 || err?.code === "invalid_api_key") {
-      return res.status(502).json({ ok: false, error: "OpenAI API key is invalid." });
-    }
-    next(err);
+    console.error("AI generate-content failed:", err?.name || "Error", err?.status || "");
+    return safeAiError(err, res);
   }
 });
 
 router.get("/drafts", requireAuth, async (req, res, next) => {
   try {
-    const drafts = await prisma.contentDraft.findMany({
+    const drafts = await prisma.draft.findMany({
       where: { userId: req.user.id },
       orderBy: { createdAt: "desc" },
-      take: 20
+      take: 50
     });
-    return res.json({
-      ok: true,
-      drafts: drafts.map((d) => ({
-        id: d.id,
-        platform: d.platform,
-        goal: d.goal,
-        tone: d.tone,
-        topic: d.topic,
-        caption: d.caption,
-        hashtags: d.hashtags,
-        savedAt: d.createdAt.toISOString()
-      }))
-    });
+    return res.json({ ok: true, drafts: drafts.map(serializeDraft) });
   } catch (err) {
     next(err);
   }
@@ -123,42 +102,48 @@ router.get("/drafts", requireAuth, async (req, res, next) => {
 
 router.post("/drafts", requireAuth, async (req, res, next) => {
   try {
-    const parsed = generateSchema
-      .extend({
-        caption: z.string().trim().min(1).max(4000),
-        hashtags: z.string().trim().min(1).max(1000)
-      })
-      .safeParse(req.body);
-
+    const parsed = draftSaveSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ ok: false, error: "Invalid draft payload." });
+      return res.status(400).json({
+        ok: false,
+        error: parsed.error.issues[0]?.message || "Invalid draft payload."
+      });
     }
 
-    const draft = await prisma.contentDraft.create({
+    const data = parsed.data;
+    const draft = await prisma.draft.create({
       data: {
         userId: req.user.id,
-        platform: parsed.data.platform,
-        goal: parsed.data.goal,
-        tone: parsed.data.tone,
-        topic: parsed.data.topic,
-        caption: parsed.data.caption,
-        hashtags: parsed.data.hashtags
+        platform: data.platform,
+        contentGoal: data.contentGoal,
+        tone: data.tone,
+        topic: data.topic,
+        audience: data.audience || "",
+        language: data.language || "en",
+        caption: data.caption,
+        hashtags: data.hashtags,
+        shortHook: data.shortHook,
+        callToAction: data.callToAction,
+        generatedAt: data.generatedAt ? new Date(data.generatedAt) : new Date()
       }
     });
 
-    return res.status(201).json({
-      ok: true,
-      draft: {
-        id: draft.id,
-        platform: draft.platform,
-        goal: draft.goal,
-        tone: draft.tone,
-        topic: draft.topic,
-        caption: draft.caption,
-        hashtags: draft.hashtags,
-        savedAt: draft.createdAt.toISOString()
-      }
+    return res.status(201).json({ ok: true, draft: serializeDraft(draft) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/drafts/:id", requireAuth, async (req, res, next) => {
+  try {
+    const existing = await prisma.draft.findFirst({
+      where: { id: req.params.id, userId: req.user.id }
     });
+    if (!existing) {
+      return res.status(404).json({ ok: false, error: "Draft not found." });
+    }
+    await prisma.draft.delete({ where: { id: existing.id } });
+    return res.json({ ok: true });
   } catch (err) {
     next(err);
   }

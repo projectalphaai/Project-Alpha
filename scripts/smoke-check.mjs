@@ -95,9 +95,13 @@ if (!auth.includes("/api/auth/login") || auth.includes("localStorage")) {
 } else ok("auth uses real API sessions");
 
 const dash = fs.readFileSync(path.join(root, "js/dashboard.js"), "utf8");
-if (!dash.includes("/api/oauth/meta/start") || !dash.includes("/api/ai/generate") || !dash.includes("/api/posts")) {
-  fail("dashboard.js missing Sprint 1 API wiring");
-} else ok("dashboard wired to Meta OAuth, OpenAI, and posts APIs");
+if (
+  !dash.includes("/api/oauth/meta/start") ||
+  !dash.includes("/api/ai/generate-content") ||
+  !dash.includes("/api/posts")
+) {
+  fail("dashboard.js missing Sprint 3 API wiring");
+} else ok("dashboard wired to Meta OAuth, OpenAI generate-content, and posts APIs");
 
 if (dash.includes("seedPhase1DemoData") || dash.includes("pa_phase1_seeded")) {
   fail("mock seed data still present in dashboard.js");
@@ -109,9 +113,10 @@ if (!oauth.includes("graph.facebook.com") && !oauth.includes("buildMetaOAuthUrl"
 } else ok("Meta OAuth route present");
 
 const ai = fs.readFileSync(path.join(root, "server/src/routes/ai.js"), "utf8");
-if (!ai.includes("OpenAI") || !ai.includes("chat.completions.create")) {
-  fail("OpenAI route missing");
-} else ok("OpenAI route present");
+const openaiLib = fs.readFileSync(path.join(root, "server/src/lib/openai.js"), "utf8");
+if (!ai.includes("/generate-content") || !openaiLib.includes("responses.create")) {
+  fail("OpenAI Responses API generate-content route missing");
+} else ok("OpenAI Responses API generate-content present");
 
 if (failures.length) {
   console.error(`\n${failures.length} failure(s)`);
