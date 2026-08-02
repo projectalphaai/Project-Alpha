@@ -10,7 +10,7 @@ const PLATFORM_LABELS = {
 
 const SECTION_META = {
   dashboard: { title: "Dashboard", subtitle: "Welcome back — here's your automation overview" },
-  schedule: { title: "Scheduler", subtitle: "Calendar and list of upcoming posts" },
+  schedule: { title: "Scheduler", subtitle: "Calendar, publish queue, and post status" },
   connect: { title: "Social Connections", subtitle: "Connect Instagram and Facebook via Meta OAuth" },
   "ai-tools": { title: "AI Content Generator", subtitle: "Generate captions with OpenAI" },
   "ai-agents": { title: "AI Agents", subtitle: "Available in a later sprint" },
@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   disableFutureSprintMocks();
 
   await refreshAllData();
-  renderWeekChart();
+  startDashboardPolling();
 });
 
 function delay(ms) {
@@ -247,37 +247,55 @@ function initQuickActions() {
   });
 }
 
+let cachedActivity = [];
+let dashboardPollTimer = null;
+
 async function refreshAllData() {
   try {
-    const [connData, postsData] = await Promise.all([
+    const [connData, postsData, activityData] = await Promise.all([
       AlphaAPI.api("/api/connections"),
-      AlphaAPI.api("/api/posts")
+      AlphaAPI.api("/api/posts"),
+      AlphaAPI.api("/api/activity?limit=30")
     ]);
     cachedConnections = connData.connections || {};
     cachedPosts = postsData.posts || [];
+    cachedActivity = activityData.activity || [];
     renderConnections();
     renderOverview();
     renderCalendar();
     renderScheduledList();
+    renderPublishQueue();
     renderUpcoming();
     renderActivityFromData();
+    renderWeekChart();
   } catch (err) {
     showToast(err.message || "Failed to load dashboard data.", "error");
   }
 }
 
+function startDashboardPolling() {
+  if (dashboardPollTimer) return;
+  dashboardPollTimer = setInterval(() => {
+    refreshAllData().catch(() => {});
+  }, 8000);
+}
+
 function renderOverview() {
   const connectedCount = Object.values(cachedConnections).filter((c) => c.connected).length;
-  const upcoming = cachedPosts.filter((p) => new Date(p.scheduledAt || p.datetime) > new Date());
+  const upcoming = cachedPosts.filter(
+    (p) => p.status === "scheduled" || p.status === "processing"
+  );
+  const published = cachedPosts.filter((p) => p.status === "published").length;
+  const failed = cachedPosts.filter((p) => p.status === "failed").length;
 
   setStat("stat-connected", connectedCount);
   setStat("scheduled-count", upcoming.length);
-  setStat("stat-published", cachedPosts.filter((p) => p.status === "published").length);
+  setStat("stat-published", published);
+  setStat("stat-failed", failed);
   setText("stat-connected-meta", "of 5 platforms");
   setText("stat-scheduled-meta", upcoming.length ? `${upcoming.length} in queue` : "Queue is empty");
-
-  const reachEl = document.getElementById("stat-reach");
-  if (reachEl) reachEl.textContent = "—";
+  setText("stat-published-meta", published ? "Mock publisher" : "None published yet");
+  setText("stat-failed-meta", failed ? "Retry from queue" : "No failures");
 }
 
 function setStat(id, value) {
@@ -328,34 +346,21 @@ function renderActivityFromData() {
   if (!list) return;
   list.innerHTML = "";
 
-  const items = [];
-  Object.values(cachedConnections)
-    .filter((c) => c.connected)
-    .forEach((c) => {
-      items.push({
-        text: `Connected ${PLATFORM_LABELS[c.platform]}${c.accountUsername ? ` (${c.accountUsername})` : ""}`,
-        time: c.connectedAt ? new Date(c.connectedAt).toLocaleString() : "Connected",
-        type: "connect"
-      });
-    });
-  cachedPosts
-    .slice()
-    .sort((a, b) => new Date(b.createdAt || b.scheduledAt) - new Date(a.createdAt || a.scheduledAt))
-    .slice(0, 5)
-    .forEach((p) => {
-      items.push({
-        text: `Scheduled ${PLATFORM_LABELS[p.platform]} post`,
-        time: new Date(p.scheduledAt || p.datetime).toLocaleString(),
-        type: "schedule"
-      });
-    });
+  const items = (cachedActivity || []).slice(0, 10).map((row) => ({
+    text: row.message,
+    time: new Date(row.createdAt).toLocaleString(),
+    type: row.type || "schedule"
+  }));
 
   if (!items.length) {
-    if (empty) empty.hidden = false;
+    if (empty) {
+      empty.hidden = false;
+      empty.textContent = "No recent activity yet.";
+    }
     return;
   }
   if (empty) empty.hidden = true;
-  items.slice(0, 8).forEach((item) => {
+  items.forEach((item) => {
     const li = document.createElement("li");
     li.className = "activity-item";
     li.innerHTML = `<span class="activity-dot type-${escapeHtml(item.type)}"></span>
@@ -369,7 +374,7 @@ function renderUpcoming() {
   const empty = document.getElementById("upcoming-empty");
   if (!list) return;
   const posts = cachedPosts
-    .filter((p) => new Date(p.scheduledAt || p.datetime) > new Date())
+    .filter((p) => p.status === "scheduled" || p.status === "processing")
     .sort((a, b) => new Date(a.scheduledAt || a.datetime) - new Date(b.scheduledAt || b.datetime))
     .slice(0, 4);
 
@@ -391,9 +396,25 @@ function renderUpcoming() {
     const caption = post.caption || post.content || "";
     li.innerHTML = `<span class="platform-pill platform-${escapeHtml(post.platform)}">${escapeHtml(PLATFORM_LABELS[post.platform] || post.platform)}</span>
       <div><strong>${escapeHtml(caption.slice(0, 64))}${caption.length > 64 ? "…" : ""}</strong>
-      <small>${escapeHtml(when)}</small></div>`;
+      <small>${escapeHtml(statusLabel(post.status))} · ${escapeHtml(when)}</small></div>`;
     list.appendChild(li);
   });
+}
+
+function statusLabel(status) {
+  const map = {
+    draft: "Draft",
+    scheduled: "Scheduled",
+    processing: "Processing",
+    published: "Published",
+    failed: "Failed",
+    cancelled: "Cancelled"
+  };
+  return map[status] || status || "Unknown";
+}
+
+function statusBadge(status) {
+  return `<span class="status-badge status-${escapeHtml(status || "scheduled")}">${escapeHtml(statusLabel(status))}</span>`;
 }
 
 /* ---------- Scheduler ---------- */
@@ -403,6 +424,7 @@ let calendarViewDate = new Date();
 function initSchedulerViews() {
   const calendarView = document.getElementById("scheduler-calendar-view");
   const listView = document.getElementById("scheduler-list-view");
+  const queueView = document.getElementById("scheduler-queue-view");
   document.querySelectorAll("[data-scheduler-view]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const view = btn.getAttribute("data-scheduler-view");
@@ -413,7 +435,9 @@ function initSchedulerViews() {
       });
       if (calendarView) calendarView.hidden = view !== "calendar";
       if (listView) listView.hidden = view !== "list";
+      if (queueView) queueView.hidden = view !== "queue";
       if (view === "list") renderScheduledList();
+      if (view === "queue") renderPublishQueue();
     });
   });
 
@@ -444,6 +468,7 @@ function renderCalendar() {
   label.textContent = calendarViewDate.toLocaleString("en-US", { month: "long", year: "numeric" });
 
   const events = cachedPosts
+    .filter((p) => p.status !== "cancelled")
     .map((p) => {
       const d = new Date(p.scheduledAt || p.datetime);
       if (d.getFullYear() !== year || d.getMonth() !== month) return null;
@@ -452,6 +477,7 @@ function renderCalendar() {
         day: d.getDate(),
         title: (p.caption || p.content || "").slice(0, 48),
         platform: p.platform,
+        status: p.status,
         time: d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         raw: p
       };
@@ -523,17 +549,35 @@ function renderCalendar() {
           <span class="event-date">${String(ev.day).padStart(2, "0")}</span>
           <div class="event-body">
             <strong>${escapeHtml(ev.title)}</strong>
-            <span>${PLATFORM_LABELS[ev.platform] || ev.platform} · ${escapeHtml(ev.time)}</span>
-            <div class="event-actions">
-              <button type="button" class="btn btn-outline-glow btn-sm" data-edit-post="${ev.id}">Edit</button>
-              <button type="button" class="btn btn-outline-glow btn-sm danger" data-delete-post="${ev.id}">Delete</button>
-            </div>
+            <span>${PLATFORM_LABELS[ev.platform] || ev.platform} · ${escapeHtml(ev.time)} · ${statusBadge(ev.status)}</span>
+            <div class="event-actions">${postActionButtons(ev.raw)}</div>
           </div>`;
         eventList.appendChild(li);
       });
       bindPostActions(eventList);
     }
   }
+}
+
+function postActionButtons(post) {
+  const editable = ["draft", "scheduled", "failed"].includes(post.status);
+  const cancelable = ["draft", "scheduled", "failed"].includes(post.status);
+  const retryable = post.status === "failed";
+  const deletable = post.status !== "processing";
+  return [
+    editable
+      ? `<button type="button" class="btn btn-outline-glow btn-sm" data-edit-post="${post.id}">Edit</button>`
+      : "",
+    cancelable
+      ? `<button type="button" class="btn btn-outline-glow btn-sm" data-cancel-post="${post.id}">Cancel</button>`
+      : "",
+    retryable
+      ? `<button type="button" class="btn btn-outline-glow btn-sm" data-retry-post="${post.id}">Retry</button>`
+      : "",
+    deletable
+      ? `<button type="button" class="btn btn-outline-glow btn-sm danger" data-delete-post="${post.id}">Delete</button>`
+      : ""
+  ].join("");
 }
 
 function renderScheduledList() {
@@ -561,16 +605,67 @@ function renderScheduledList() {
       minute: "2-digit"
     });
     const caption = post.caption || post.content || "";
+    const err =
+      post.status === "failed" && post.errorMessage
+        ? `<small class="post-error">${escapeHtml(post.errorMessage)}</small>`
+        : "";
     li.innerHTML = `
       <div class="scheduled-post-main">
         <span class="platform-pill platform-${escapeHtml(post.platform)}">${escapeHtml(PLATFORM_LABELS[post.platform] || post.platform)}</span>
+        ${statusBadge(post.status)}
         <strong>${escapeHtml(caption.slice(0, 90))}${caption.length > 90 ? "…" : ""}</strong>
         <small>${escapeHtml(when)}</small>
+        ${err}
       </div>
-      <div class="scheduled-post-actions">
-        <button type="button" class="btn btn-outline-glow btn-sm" data-edit-post="${post.id}">Edit</button>
-        <button type="button" class="btn btn-outline-glow btn-sm danger" data-delete-post="${post.id}">Delete</button>
-      </div>`;
+      <div class="scheduled-post-actions">${postActionButtons(post)}</div>`;
+    list.appendChild(li);
+  });
+  bindPostActions(list);
+}
+
+function renderPublishQueue() {
+  const list = document.getElementById("publish-queue-list");
+  const empty = document.getElementById("queue-empty");
+  const counts = document.getElementById("queue-counts");
+  if (!list) return;
+
+  const queue = cachedPosts
+    .filter((p) => ["scheduled", "processing", "failed"].includes(p.status))
+    .sort((a, b) => new Date(a.scheduledAt || a.datetime) - new Date(b.scheduledAt || b.datetime));
+
+  if (counts) {
+    const scheduled = queue.filter((p) => p.status === "scheduled").length;
+    const processing = queue.filter((p) => p.status === "processing").length;
+    const failed = queue.filter((p) => p.status === "failed").length;
+    counts.textContent = `${scheduled} scheduled · ${processing} processing · ${failed} failed`;
+  }
+
+  list.innerHTML = "";
+  if (!queue.length) {
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+
+  queue.forEach((post) => {
+    const li = document.createElement("li");
+    li.className = "scheduled-post-item";
+    const when = new Date(post.scheduledAt || post.datetime).toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+    const caption = post.caption || post.content || "";
+    li.innerHTML = `
+      <div class="scheduled-post-main">
+        <span class="platform-pill platform-${escapeHtml(post.platform)}">${escapeHtml(PLATFORM_LABELS[post.platform] || post.platform)}</span>
+        ${statusBadge(post.status)}
+        <strong>${escapeHtml(caption.slice(0, 90))}${caption.length > 90 ? "…" : ""}</strong>
+        <small>Due ${escapeHtml(when)} · attempts ${post.attemptCount || 0}/${post.maxAttempts || 3}</small>
+        ${post.errorMessage ? `<small class="post-error">${escapeHtml(post.errorMessage)}</small>` : ""}
+      </div>
+      <div class="scheduled-post-actions">${postActionButtons(post)}</div>`;
     list.appendChild(li);
   });
   bindPostActions(list);
@@ -589,11 +684,38 @@ function bindPostActions(root) {
       e.stopPropagation();
       try {
         await AlphaAPI.api(`/api/posts/${btn.getAttribute("data-delete-post")}`, { method: "DELETE" });
-        showToast("Scheduled post deleted", "info");
+        showToast("Post deleted", "info");
         await refreshAllData();
-        renderWeekChart();
       } catch (err) {
         showToast(err.message || "Delete failed.", "error");
+      }
+    });
+  });
+  root.querySelectorAll("[data-cancel-post]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        await AlphaAPI.api(`/api/posts/${btn.getAttribute("data-cancel-post")}/cancel`, {
+          method: "POST"
+        });
+        showToast("Schedule cancelled", "info");
+        await refreshAllData();
+      } catch (err) {
+        showToast(err.message || "Cancel failed.", "error");
+      }
+    });
+  });
+  root.querySelectorAll("[data-retry-post]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        await AlphaAPI.api(`/api/posts/${btn.getAttribute("data-retry-post")}/retry`, {
+          method: "POST"
+        });
+        showToast("Retry queued");
+        await refreshAllData();
+      } catch (err) {
+        showToast(err.message || "Retry failed.", "error");
       }
     });
   });
@@ -649,6 +771,7 @@ function initScheduleForm() {
   const datetime = document.getElementById("post-datetime");
   const count = document.getElementById("content-count");
   const submit = document.getElementById("schedule-submit");
+  const draftBtn = document.getElementById("schedule-save-draft");
   const success = document.getElementById("schedule-success");
   const idInput = document.getElementById("post-id");
 
@@ -658,9 +781,9 @@ function initScheduleForm() {
     content.classList.remove("invalid");
   });
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (success) success.hidden = true;
+  const validateBase = ({ requireFutureTime }) => {
+    ["content-error", "platform-error", "datetime-error"].forEach(hideError);
+    [content, platform, datetime].forEach((el) => el?.classList.remove("invalid"));
     let valid = true;
     const contentVal = (content?.value || "").trim();
     if (contentVal.length < 10) {
@@ -673,35 +796,47 @@ function initScheduleForm() {
       platform?.classList.add("invalid");
       valid = false;
     }
-    if (!datetime?.value || new Date(datetime.value) <= new Date()) {
-      showError("datetime-error");
-      datetime?.classList.add("invalid");
-      valid = false;
+    if (requireFutureTime) {
+      if (!datetime?.value || new Date(datetime.value) <= new Date()) {
+        showError("datetime-error");
+        datetime?.classList.add("invalid");
+        valid = false;
+      }
     }
-    if (!valid) {
+    return valid;
+  };
+
+  const savePost = async ({ status, button }) => {
+    if (success) success.hidden = true;
+    const requireFutureTime = status === "scheduled";
+    if (!validateBase({ requireFutureTime })) {
       showToast("Please fix the highlighted fields.", "error");
       return;
     }
 
     const payload = {
       platform: platform.value,
-      caption: contentVal,
-      scheduledAt: localInputToIso(datetime.value)
+      caption: (content?.value || "").trim(),
+      status
     };
+    if (datetime?.value) payload.scheduledAt = localInputToIso(datetime.value);
 
-    setButtonLoading(submit, true);
+    setButtonLoading(button, true);
     try {
       const editingId = idInput?.value || "";
       if (editingId) {
         await AlphaAPI.api(`/api/posts/${editingId}`, { method: "PUT", body: payload });
-        showToast("Scheduled post updated");
+        showToast(status === "draft" ? "Draft updated" : "Scheduled post updated");
       } else {
         await AlphaAPI.api("/api/posts", { method: "POST", body: payload });
-        showToast(`Scheduled for ${PLATFORM_LABELS[payload.platform]}`);
+        showToast(
+          status === "draft"
+            ? "Draft saved"
+            : `Scheduled for ${PLATFORM_LABELS[payload.platform]}`
+        );
       }
       if (success) success.hidden = false;
       await refreshAllData();
-      renderWeekChart();
       setTimeout(() => {
         closeModal("schedule-modal");
         form.reset();
@@ -712,8 +847,17 @@ function initScheduleForm() {
     } catch (err) {
       showToast(err.message || "Could not save post.", "error");
     } finally {
-      setButtonLoading(submit, false);
+      setButtonLoading(button, false);
     }
+  };
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await savePost({ status: "scheduled", button: submit });
+  });
+
+  draftBtn?.addEventListener("click", async () => {
+    await savePost({ status: "draft", button: draftBtn });
   });
 }
 

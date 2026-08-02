@@ -12,6 +12,8 @@ import oauthRoutes from "./routes/oauth.js";
 import connectionsRoutes from "./routes/connections.js";
 import postsRoutes from "./routes/posts.js";
 import aiRoutes from "./routes/ai.js";
+import activityRoutes from "./routes/activity.js";
+import { getPublisherWorkerConfig } from "./worker/publisherWorker.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "../..");
@@ -54,13 +56,19 @@ export function createApp() {
   });
 
   app.get("/api/health", (_req, res) => {
+    const worker = getPublisherWorkerConfig();
     res.json({
       ok: true,
       service: "project-alpha",
-      sprint: 3,
+      sprint: 4,
       env: config.nodeEnv,
       database: "postgresql",
-      openaiConfigured: Boolean(config.openai.apiKey)
+      openaiConfigured: Boolean(config.openai.apiKey),
+      publishWorker: {
+        enabled: worker.enabled,
+        adapter: worker.adapter,
+        intervalMs: worker.intervalMs
+      }
     });
   });
 
@@ -79,6 +87,7 @@ export function createApp() {
   app.use("/api/connections", connectionsRoutes);
   app.use("/api/posts", postsRoutes);
   app.use("/api/ai", aiRoutes);
+  app.use("/api/activity", activityRoutes);
 
   app.use(express.static(rootDir, { extensions: ["html"] }));
 

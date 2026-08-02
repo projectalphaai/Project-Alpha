@@ -98,10 +98,13 @@ const dash = fs.readFileSync(path.join(root, "js/dashboard.js"), "utf8");
 if (
   !dash.includes("/api/oauth/meta/start") ||
   !dash.includes("/api/ai/generate-content") ||
-  !dash.includes("/api/posts")
+  !dash.includes("/api/posts") ||
+  !dash.includes("/api/activity") ||
+  !dash.includes("/cancel") ||
+  !dash.includes("/retry")
 ) {
-  fail("dashboard.js missing Sprint 3 API wiring");
-} else ok("dashboard wired to Meta OAuth, OpenAI generate-content, and posts APIs");
+  fail("dashboard.js missing Sprint 4 scheduler API wiring");
+} else ok("dashboard wired to Meta, AI, posts, activity, cancel, retry");
 
 if (dash.includes("seedPhase1DemoData") || dash.includes("pa_phase1_seeded")) {
   fail("mock seed data still present in dashboard.js");
@@ -117,6 +120,18 @@ const openaiLib = fs.readFileSync(path.join(root, "server/src/lib/openai.js"), "
 if (!ai.includes("/generate-content") || !openaiLib.includes("responses.create")) {
   fail("OpenAI Responses API generate-content route missing");
 } else ok("OpenAI Responses API generate-content present");
+
+const worker = fs.readFileSync(path.join(root, "server/src/worker/publisherWorker.js"), "utf8");
+const mockPub = fs.readFileSync(path.join(root, "server/src/lib/publishers/mockPublisher.js"), "utf8");
+const posts = fs.readFileSync(path.join(root, "server/src/routes/posts.js"), "utf8");
+if (
+  !worker.includes("claimDuePosts") ||
+  !mockPub.includes("publishWithMockAdapter") ||
+  !posts.includes("/:id/cancel") ||
+  !posts.includes("/:id/retry")
+) {
+  fail("Sprint 4 publisher queue missing");
+} else ok("Sprint 4 publisher queue + mock adapter present");
 
 if (failures.length) {
   console.error(`\n${failures.length} failure(s)`);

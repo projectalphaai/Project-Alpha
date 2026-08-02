@@ -167,16 +167,16 @@
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                         </div>
                         <h3>Posts Published</h3>
-                        <p class="stat-value" id="stat-published" data-count="128" data-format="comma">0</p>
-                        <span class="stat-change positive">+12% this month</span>
+                        <p class="stat-value" id="stat-published" data-count="0">0</p>
+                        <span class="stat-change" id="stat-published-meta">Via publish queue</span>
                     </div>
                     <div class="stat-card glass-panel">
                         <div class="stat-card-icon">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
                         </div>
-                        <h3>Total Reach</h3>
-                        <p class="stat-value" id="stat-reach" data-count="48200" data-format="compact">0</p>
-                        <span class="stat-change positive">+8.4% this week</span>
+                        <h3>Failed Jobs</h3>
+                        <p class="stat-value" id="stat-failed" data-count="0">0</p>
+                        <span class="stat-change" id="stat-failed-meta">Retry from queue</span>
                     </div>
                 </div>
 
@@ -233,12 +233,13 @@
             <!-- Scheduler -->
             <section id="schedule" class="dashboard-section" aria-labelledby="schedule-heading">
                 <h2 id="schedule-heading">Scheduler</h2>
-                <p class="section-lead">Plan posts on the calendar or manage them in the list. Everything saves to this browser.</p>
+                <p class="section-lead">Plan posts on the calendar, manage the publish queue, and track status in PostgreSQL. Publishing uses a mock adapter until social APIs are connected.</p>
 
                 <div class="scheduler-toolbar">
                     <div class="view-toggle" role="group" aria-label="Scheduler view">
                         <button type="button" class="view-toggle-btn active" data-scheduler-view="calendar" aria-pressed="true">Calendar</button>
                         <button type="button" class="view-toggle-btn" data-scheduler-view="list" aria-pressed="false">List</button>
+                        <button type="button" class="view-toggle-btn" data-scheduler-view="queue" aria-pressed="false">Queue</button>
                     </div>
                     <button type="button" class="btn btn-glow btn-sm" id="open-schedule-modal">
                         <span class="btn-label">Create Scheduled Post</span>
@@ -269,10 +270,19 @@
 
                     <div class="scheduled-list-panel glass-panel" id="scheduler-list-view" hidden>
                         <div class="panel-header">
-                            <h3>All scheduled posts</h3>
+                            <h3>All posts</h3>
                         </div>
                         <ul class="scheduled-posts-list" id="scheduled-posts-list"></ul>
-                        <p class="empty-state" id="scheduled-empty" hidden>No scheduled posts yet. Create one to get started.</p>
+                        <p class="empty-state" id="scheduled-empty" hidden>No posts yet. Create one to get started.</p>
+                    </div>
+
+                    <div class="scheduled-list-panel glass-panel" id="scheduler-queue-view" hidden>
+                        <div class="panel-header">
+                            <h3>Publishing queue</h3>
+                            <span class="panel-meta" id="queue-counts">Upcoming · processing · failed</span>
+                        </div>
+                        <ul class="scheduled-posts-list" id="publish-queue-list"></ul>
+                        <p class="empty-state" id="queue-empty" hidden>Queue is empty. Schedule a post to enqueue it.</p>
                     </div>
                 </div>
             </section>
@@ -847,13 +857,17 @@
                     <span class="field-error" id="datetime-error" hidden>Please choose a future date and time.</span>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn btn-outline-glow btn-sm" data-close-modal="schedule-modal">Cancel</button>
+                    <button type="button" class="btn btn-outline-glow btn-sm" data-close-modal="schedule-modal">Close</button>
+                    <button type="button" class="btn btn-outline-glow btn-sm" id="schedule-save-draft">
+                        <span class="btn-label">Save Draft</span>
+                        <span class="btn-spinner" hidden aria-hidden="true"></span>
+                    </button>
                     <button type="submit" class="btn btn-glow btn-sm" id="schedule-submit">
-                        <span class="btn-label">Save Post</span>
+                        <span class="btn-label">Schedule Post</span>
                         <span class="btn-spinner" hidden aria-hidden="true"></span>
                     </button>
                 </div>
-                <div class="form-success" id="schedule-success" hidden role="status">Post saved successfully!</div>
+                <div class="form-success" id="schedule-success" hidden role="status">Post saved to PostgreSQL.</div>
             </form>
         </div>
     </div>
