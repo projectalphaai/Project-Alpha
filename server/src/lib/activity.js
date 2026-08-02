@@ -1,11 +1,12 @@
 import { prisma } from "./prisma.js";
 
-export async function logActivity({ userId, postId = null, type, message, meta = {} }) {
+export async function logActivity({ userId, postId = null, leadId = null, type, message, meta = {} }) {
   try {
     return await prisma.activityLog.create({
       data: {
         userId,
         postId: postId || null,
+        leadId: leadId || null,
         type,
         message,
         metaJson: JSON.stringify(meta || {})
@@ -27,6 +28,7 @@ export function serializeActivity(row) {
   return {
     id: row.id,
     postId: row.postId || null,
+    leadId: row.leadId || null,
     type: row.type,
     message: row.message,
     meta,

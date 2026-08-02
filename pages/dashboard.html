@@ -545,27 +545,53 @@
             <!-- Leads -->
             <section id="leads" class="dashboard-section" aria-labelledby="leads-heading">
                 <h2 id="leads-heading">Lead Management</h2>
-                <p class="section-lead">Add, edit, search, and sync leads with your CRM pipeline stages.</p>
+                <p class="section-lead">PostgreSQL-backed leads with stages, tags, owners, follow-ups, and activity. Synced with the CRM kanban.</p>
+                <div class="stats-grid leads-stats" id="leads-stats">
+                    <div class="stat-card glass-panel"><h3>Total leads</h3><p class="stat-value" id="lead-stat-total">0</p></div>
+                    <div class="stat-card glass-panel"><h3>Open pipeline</h3><p class="stat-value" id="lead-stat-open">0</p></div>
+                    <div class="stat-card glass-panel"><h3>Won</h3><p class="stat-value" id="lead-stat-won">0</p></div>
+                    <div class="stat-card glass-panel"><h3>Follow-ups due</h3><p class="stat-value" id="lead-stat-followups">0</p></div>
+                </div>
                 <div class="leads-toolbar">
                     <label class="sr-only" for="leads-search">Search leads</label>
-                    <input type="search" id="leads-search" placeholder="Search by name, email, or company..." aria-label="Search leads">
+                    <input type="search" id="leads-search" placeholder="Search name, email, company, phone..." aria-label="Search leads">
+                    <select id="leads-filter-stage" aria-label="Filter by stage">
+                        <option value="">All stages</option>
+                        <option value="new">New</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="qualified">Qualified</option>
+                        <option value="proposal">Proposal</option>
+                        <option value="won">Won</option>
+                        <option value="lost">Lost</option>
+                    </select>
+                    <select id="leads-filter-followup" aria-label="Filter by follow-up">
+                        <option value="">Any follow-up</option>
+                        <option value="due">Due</option>
+                        <option value="upcoming">Upcoming</option>
+                        <option value="none">None</option>
+                    </select>
+                    <input type="search" id="leads-filter-tag" placeholder="Filter tag" aria-label="Filter by tag" maxlength="40">
                     <button type="button" class="btn btn-glow btn-sm" id="lead-add-btn">Add Lead</button>
                 </div>
                 <form class="lead-form glass-panel" id="lead-form" hidden novalidate>
                     <input type="hidden" id="lead-id" value="">
                     <div class="form-field">
                         <label for="lead-name">Name <span class="required">*</span></label>
-                        <input type="text" id="lead-name" required maxlength="80">
+                        <input type="text" id="lead-name" required maxlength="120">
                         <span class="field-error" id="lead-name-error" hidden>Name is required.</span>
                     </div>
                     <div class="form-field">
-                        <label for="lead-email">Email <span class="required">*</span></label>
-                        <input type="email" id="lead-email" required maxlength="120">
+                        <label for="lead-email">Email</label>
+                        <input type="email" id="lead-email" maxlength="160">
                         <span class="field-error" id="lead-email-error" hidden>Enter a valid email.</span>
                     </div>
                     <div class="form-field">
+                        <label for="lead-phone">Phone</label>
+                        <input type="tel" id="lead-phone" maxlength="40">
+                    </div>
+                    <div class="form-field">
                         <label for="lead-company">Company</label>
-                        <input type="text" id="lead-company" maxlength="80">
+                        <input type="text" id="lead-company" maxlength="120">
                     </div>
                     <div class="form-field">
                         <label for="lead-stage">CRM stage</label>
@@ -573,8 +599,39 @@
                             <option value="new">New</option>
                             <option value="contacted">Contacted</option>
                             <option value="qualified">Qualified</option>
-                            <option value="closed">Closed</option>
+                            <option value="proposal">Proposal</option>
+                            <option value="won">Won</option>
+                            <option value="lost">Lost</option>
                         </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="lead-tags">Tags</label>
+                        <input type="text" id="lead-tags" maxlength="200" placeholder="agency, inbound, hot">
+                    </div>
+                    <div class="form-field">
+                        <label for="lead-followup">Follow-up reminder</label>
+                        <input type="datetime-local" id="lead-followup">
+                    </div>
+                    <div class="form-field">
+                        <label for="lead-owner-name">Lead owner</label>
+                        <input type="text" id="lead-owner-name" readonly>
+                        <input type="hidden" id="lead-owner-id" value="">
+                    </div>
+                    <div class="form-field">
+                        <label for="lead-social-website">Website</label>
+                        <input type="url" id="lead-social-website" maxlength="300" placeholder="https://">
+                    </div>
+                    <div class="form-field">
+                        <label for="lead-social-linkedin">LinkedIn</label>
+                        <input type="url" id="lead-social-linkedin" maxlength="300" placeholder="https://linkedin.com/in/...">
+                    </div>
+                    <div class="form-field">
+                        <label for="lead-social-instagram">Instagram</label>
+                        <input type="url" id="lead-social-instagram" maxlength="300">
+                    </div>
+                    <div class="form-field">
+                        <label for="lead-social-x">X profile</label>
+                        <input type="url" id="lead-social-x" maxlength="300">
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-glow btn-sm" id="lead-save-btn">
@@ -589,9 +646,11 @@
                         <thead>
                             <tr>
                                 <th scope="col">Name</th>
-                                <th scope="col">Email</th>
+                                <th scope="col">Email / Phone</th>
                                 <th scope="col">Company</th>
                                 <th scope="col">Stage</th>
+                                <th scope="col">Owner</th>
+                                <th scope="col">Follow-up</th>
                                 <th scope="col">Actions</th>
                             </tr>
                         </thead>
@@ -599,40 +658,58 @@
                     </table>
                     <p class="empty-state" id="leads-empty" hidden>No leads yet. Add your first lead to populate the CRM.</p>
                 </div>
+                <div class="glass-panel nested-panel" id="lead-detail-panel" hidden style="margin-top:16px;padding:18px">
+                    <div class="panel-header">
+                        <h3 id="lead-detail-title">Lead detail</h3>
+                        <button type="button" class="btn btn-outline-glow btn-sm" id="lead-detail-close">Close</button>
+                    </div>
+                    <div class="lead-detail-grid">
+                        <div>
+                            <h4>Notes</h4>
+                            <form id="lead-note-form" class="lead-note-form">
+                                <textarea id="lead-note-body" rows="3" maxlength="4000" placeholder="Add a note..."></textarea>
+                                <button type="submit" class="btn btn-glow btn-sm">Add note</button>
+                            </form>
+                            <ul class="activity-list" id="lead-notes-list"></ul>
+                        </div>
+                        <div>
+                            <h4>Activity timeline</h4>
+                            <ul class="activity-list" id="lead-timeline-list"></ul>
+                            <h4 style="margin-top:16px">Status history</h4>
+                            <ul class="activity-list" id="lead-history-list"></ul>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- CRM Pipeline -->
             <section id="crm" class="dashboard-section" aria-labelledby="crm-heading">
                 <h2 id="crm-heading">CRM Pipeline</h2>
-                <p class="section-lead">Drag cards between stages or use Move to advance deals. Synced with Leads.</p>
+                <p class="section-lead">Drag cards between stages or use Move. Changes persist to PostgreSQL with status history.</p>
                 <div class="crm-board" id="crm-board" role="region" aria-label="CRM Kanban board">
                     <div class="crm-column glass-panel" data-stage="new">
-                        <div class="crm-column-header">
-                            <h3>New</h3>
-                            <span class="crm-count" data-count>0</span>
-                        </div>
+                        <div class="crm-column-header"><h3>New</h3><span class="crm-count" data-count>0</span></div>
                         <div class="crm-cards" data-dropzone="new" aria-label="New stage"></div>
                     </div>
                     <div class="crm-column glass-panel" data-stage="contacted">
-                        <div class="crm-column-header">
-                            <h3>Contacted</h3>
-                            <span class="crm-count" data-count>0</span>
-                        </div>
+                        <div class="crm-column-header"><h3>Contacted</h3><span class="crm-count" data-count>0</span></div>
                         <div class="crm-cards" data-dropzone="contacted" aria-label="Contacted stage"></div>
                     </div>
                     <div class="crm-column glass-panel" data-stage="qualified">
-                        <div class="crm-column-header">
-                            <h3>Qualified</h3>
-                            <span class="crm-count" data-count>0</span>
-                        </div>
+                        <div class="crm-column-header"><h3>Qualified</h3><span class="crm-count" data-count>0</span></div>
                         <div class="crm-cards" data-dropzone="qualified" aria-label="Qualified stage"></div>
                     </div>
-                    <div class="crm-column glass-panel" data-stage="closed">
-                        <div class="crm-column-header">
-                            <h3>Closed</h3>
-                            <span class="crm-count" data-count>0</span>
-                        </div>
-                        <div class="crm-cards" data-dropzone="closed" aria-label="Closed stage"></div>
+                    <div class="crm-column glass-panel" data-stage="proposal">
+                        <div class="crm-column-header"><h3>Proposal</h3><span class="crm-count" data-count>0</span></div>
+                        <div class="crm-cards" data-dropzone="proposal" aria-label="Proposal stage"></div>
+                    </div>
+                    <div class="crm-column glass-panel" data-stage="won">
+                        <div class="crm-column-header"><h3>Won</h3><span class="crm-count" data-count>0</span></div>
+                        <div class="crm-cards" data-dropzone="won" aria-label="Won stage"></div>
+                    </div>
+                    <div class="crm-column glass-panel" data-stage="lost">
+                        <div class="crm-column-header"><h3>Lost</h3><span class="crm-count" data-count>0</span></div>
+                        <div class="crm-cards" data-dropzone="lost" aria-label="Lost stage"></div>
                     </div>
                 </div>
             </section>

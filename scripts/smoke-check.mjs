@@ -100,12 +100,14 @@ if (
   !dash.includes("/api/ai/generate-content") ||
   !dash.includes("/api/posts") ||
   !dash.includes("/api/activity") ||
+  !dash.includes("/api/leads") ||
+  !dash.includes("renderCrmBoard") ||
   !dash.includes("/cancel") ||
   !dash.includes("/retry") ||
   !dash.includes("startOAuthFlow")
 ) {
-  fail("dashboard.js missing Sprint 5 OAuth / scheduler wiring");
-} else ok("dashboard wired to multi-provider OAuth, AI, posts, activity");
+  fail("dashboard.js missing Sprint 5/6 OAuth / scheduler / CRM wiring");
+} else ok("dashboard wired to OAuth, AI, posts, activity, CRM leads");
 
 if (dash.includes("seedPhase1DemoData") || dash.includes("pa_phase1_seeded")) {
   fail("mock seed data still present in dashboard.js");
@@ -148,6 +150,20 @@ if (
 ) {
   fail("Sprint 5 multi-provider OAuth missing");
 } else ok("Sprint 5 multi-provider OAuth present");
+
+const leadsRoutes = fs.readFileSync(path.join(root, "server/src/routes/leads.js"), "utf8");
+const leadsLib = fs.readFileSync(path.join(root, "server/src/lib/leads.js"), "utf8");
+const schema = fs.readFileSync(path.join(root, "server/prisma/schema.prisma"), "utf8");
+if (
+  !leadsRoutes.includes('router.patch("/:id/stage"') ||
+  !leadsRoutes.includes('router.get("/stats"') ||
+  !leadsLib.includes("LEAD_STAGES") ||
+  !schema.includes("model Lead") ||
+  !schema.includes("model LeadNote") ||
+  !schema.includes("model LeadStatusHistory")
+) {
+  fail("Sprint 6 CRM leads module missing");
+} else ok("Sprint 6 CRM leads module present");
 
 if (failures.length) {
   console.error(`\n${failures.length} failure(s)`);

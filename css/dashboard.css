@@ -1350,7 +1350,37 @@ select.invalid {
 .stage-new { border-color: rgba(59, 130, 246, 0.4); color: #93c5fd; }
 .stage-contacted { border-color: rgba(139, 92, 246, 0.4); color: #c4b5fd; }
 .stage-qualified { border-color: rgba(6, 182, 212, 0.4); color: #67e8f9; }
+.stage-proposal { border-color: rgba(251, 191, 36, 0.45); color: #fde68a; }
+.stage-won { border-color: rgba(34, 197, 94, 0.4); color: #86efac; }
+.stage-lost { border-color: rgba(248, 113, 113, 0.45); color: #fca5a5; }
 .stage-closed { border-color: rgba(34, 197, 94, 0.4); color: #86efac; }
+
+.leads-stats { margin-bottom: 16px; }
+.leads-toolbar select {
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-color);
+}
+.lead-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+.lead-note-form textarea {
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-color);
+    font-family: var(--font-body);
+}
+@media (max-width: 900px) {
+    .lead-detail-grid { grid-template-columns: 1fr; }
+}
 
 .lead-actions {
     display: flex;
@@ -1380,9 +1410,10 @@ select.invalid {
 /* CRM */
 .crm-board {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
+    grid-template-columns: repeat(6, minmax(160px, 1fr));
+    gap: 12px;
     align-items: start;
+    overflow-x: auto;
 }
 
 .crm-column {

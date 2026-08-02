@@ -14,8 +14,8 @@ const SECTION_META = {
   connect: { title: "Social Connections", subtitle: "OAuth for Instagram, Facebook, YouTube, LinkedIn, and X" },
   "ai-tools": { title: "AI Content Generator", subtitle: "Generate captions with OpenAI" },
   "ai-agents": { title: "AI Agents", subtitle: "Available in a later sprint" },
-  leads: { title: "Leads", subtitle: "Available in a later sprint" },
-  crm: { title: "CRM Pipeline", subtitle: "Available in a later sprint" },
+  leads: { title: "Leads", subtitle: "Search, filter, and manage your lead database" },
+  crm: { title: "CRM Pipeline", subtitle: "Drag-and-drop kanban synced with PostgreSQL" },
   analytics: { title: "Analytics", subtitle: "Available in a later sprint" },
   inbox: { title: "Inbox", subtitle: "Available in a later sprint" },
   settings: { title: "Settings", subtitle: "Manage your profile and preferences" }
@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initScheduleForm();
   initConnectPages();
   initAITools();
+  initLeadsCrm();
   initSettings();
   initKeyboardA11y();
   initOAuthQueryFeedback();
@@ -248,18 +249,38 @@ function initQuickActions() {
 }
 
 let cachedActivity = [];
+let cachedLeads = [];
+let leadStats = { total: 0, open: 0, byStage: {}, followUpsDue: 0 };
+let selectedLeadId = null;
 let dashboardPollTimer = null;
+let currentUser = null;
+
+const LEAD_STAGES = ["new", "contacted", "qualified", "proposal", "won", "lost"];
+const LEAD_STAGE_LABELS = {
+  new: "New",
+  contacted: "Contacted",
+  qualified: "Qualified",
+  proposal: "Proposal",
+  won: "Won",
+  lost: "Lost"
+};
 
 async function refreshAllData() {
   try {
-    const [connData, postsData, activityData] = await Promise.all([
+    const [connData, postsData, activityData, leadsData, statsData, meData] = await Promise.all([
       AlphaAPI.api("/api/connections"),
       AlphaAPI.api("/api/posts"),
-      AlphaAPI.api("/api/activity?limit=30")
+      AlphaAPI.api("/api/activity?limit=30"),
+      AlphaAPI.api(buildLeadsQuery()),
+      AlphaAPI.api("/api/leads/stats"),
+      AlphaAPI.api("/api/auth/me")
     ]);
     cachedConnections = connData.connections || {};
     cachedPosts = postsData.posts || [];
     cachedActivity = activityData.activity || [];
+    cachedLeads = leadsData.leads || [];
+    leadStats = statsData;
+    currentUser = meData.user || null;
     renderConnections();
     renderOverview();
     renderCalendar();
@@ -268,9 +289,26 @@ async function refreshAllData() {
     renderUpcoming();
     renderActivityFromData();
     renderWeekChart();
+    renderLeadStats();
+    renderLeadsTable();
+    renderCrmBoard();
   } catch (err) {
     showToast(err.message || "Failed to load dashboard data.", "error");
   }
+}
+
+function buildLeadsQuery() {
+  const params = new URLSearchParams();
+  const q = document.getElementById("leads-search")?.value?.trim();
+  const stage = document.getElementById("leads-filter-stage")?.value;
+  const followUp = document.getElementById("leads-filter-followup")?.value;
+  const tag = document.getElementById("leads-filter-tag")?.value?.trim();
+  if (q) params.set("q", q);
+  if (stage) params.set("stage", stage);
+  if (followUp) params.set("followUp", followUp);
+  if (tag) params.set("tag", tag);
+  const qs = params.toString();
+  return qs ? `/api/leads?${qs}` : "/api/leads";
 }
 
 function startDashboardPolling() {
@@ -1384,7 +1422,7 @@ function initSettings() {
 }
 
 function disableFutureSprintMocks() {
-  ["ai-agents", "leads", "crm", "analytics", "inbox"].forEach((id) => {
+  ["ai-agents", "analytics", "inbox"].forEach((id) => {
     const section = document.getElementById(id);
     if (!section) return;
     if (section.querySelector("[data-sprint-gate]")) return;
@@ -1393,7 +1431,353 @@ function disableFutureSprintMocks() {
     gate.dataset.sprintGate = "1";
     gate.style.padding = "20px";
     gate.style.marginBottom = "16px";
-    gate.innerHTML = `<p style="margin:0;color:var(--text-muted)">This section is outside Sprint 1. Mock data has been removed. Real ${SECTION_META[id]?.title || "features"} ship in a later sprint.</p>`;
+    gate.innerHTML = `<p style="margin:0;color:var(--text-muted)">This section ships in a later sprint. Mock data has been removed.</p>`;
     section.insertBefore(gate, section.children[1] || null);
+  });
+}
+
+/* ---------- Sprint 6: Leads + CRM ---------- */
+
+function initLeadsCrm() {
+  document.getElementById("lead-add-btn")?.addEventListener("click", () => openLeadForm());
+  document.getElementById("lead-cancel-btn")?.addEventListener("click", () => {
+    const form = document.getElementById("lead-form");
+    if (form) form.hidden = true;
+  });
+  document.getElementById("lead-detail-close")?.addEventListener("click", () => {
+    selectedLeadId = null;
+    const panel = document.getElementById("lead-detail-panel");
+    if (panel) panel.hidden = true;
+  });
+
+  ["leads-search", "leads-filter-stage", "leads-filter-followup", "leads-filter-tag"].forEach((id) => {
+    document.getElementById(id)?.addEventListener("input", () => {
+      refreshLeadsOnly();
+    });
+    document.getElementById(id)?.addEventListener("change", () => {
+      refreshLeadsOnly();
+    });
+  });
+
+  document.getElementById("lead-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await saveLeadFromForm();
+  });
+
+  document.getElementById("lead-note-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!selectedLeadId) return;
+    const body = document.getElementById("lead-note-body")?.value?.trim();
+    if (!body) return;
+    try {
+      await AlphaAPI.api(`/api/leads/${selectedLeadId}/notes`, { method: "POST", body: { body } });
+      document.getElementById("lead-note-body").value = "";
+      showToast("Note added");
+      await openLeadDetail(selectedLeadId);
+      await refreshLeadsOnly();
+    } catch (err) {
+      showToast(err.message || "Could not add note.", "error");
+    }
+  });
+}
+
+async function refreshLeadsOnly() {
+  try {
+    const [leadsData, statsData] = await Promise.all([
+      AlphaAPI.api(buildLeadsQuery()),
+      AlphaAPI.api("/api/leads/stats")
+    ]);
+    cachedLeads = leadsData.leads || [];
+    leadStats = statsData;
+    renderLeadStats();
+    renderLeadsTable();
+    renderCrmBoard();
+  } catch (err) {
+    showToast(err.message || "Could not refresh leads.", "error");
+  }
+}
+
+function renderLeadStats() {
+  setStat("lead-stat-total", leadStats.total || 0);
+  setStat("lead-stat-open", leadStats.open || 0);
+  setStat("lead-stat-won", leadStats.byStage?.won || 0);
+  setStat("lead-stat-followups", leadStats.followUpsDue || 0);
+}
+
+function openLeadForm(lead = null) {
+  const form = document.getElementById("lead-form");
+  if (!form) return;
+  form.hidden = false;
+  form.reset();
+  document.getElementById("lead-id").value = lead?.id || "";
+  document.getElementById("lead-name").value = lead?.name || "";
+  document.getElementById("lead-email").value = lead?.email || "";
+  document.getElementById("lead-phone").value = lead?.phone || "";
+  document.getElementById("lead-company").value = lead?.company || "";
+  document.getElementById("lead-stage").value = lead?.stage || "new";
+  document.getElementById("lead-tags").value = (lead?.tags || []).join(", ");
+  document.getElementById("lead-owner-id").value = lead?.ownerId || currentUser?.id || "";
+  document.getElementById("lead-owner-name").value =
+    lead?.ownerName || currentUser?.name || "You";
+  if (lead?.followUpAt) {
+    document.getElementById("lead-followup").value = toLocalInput(lead.followUpAt);
+  }
+  const social = lead?.socialLinks || {};
+  document.getElementById("lead-social-website").value = social.website || "";
+  document.getElementById("lead-social-linkedin").value = social.linkedin || "";
+  document.getElementById("lead-social-instagram").value = social.instagram || "";
+  document.getElementById("lead-social-x").value = social.x || "";
+  form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+async function saveLeadFromForm() {
+  const id = document.getElementById("lead-id")?.value || "";
+  const name = document.getElementById("lead-name")?.value?.trim() || "";
+  const email = document.getElementById("lead-email")?.value?.trim() || "";
+  hideError("lead-name-error");
+  hideError("lead-email-error");
+  if (name.length < 2) {
+    showError("lead-name-error");
+    return;
+  }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showError("lead-email-error");
+    return;
+  }
+
+  const followUpVal = document.getElementById("lead-followup")?.value;
+  const payload = {
+    name,
+    email,
+    phone: document.getElementById("lead-phone")?.value?.trim() || "",
+    company: document.getElementById("lead-company")?.value?.trim() || "",
+    stage: document.getElementById("lead-stage")?.value || "new",
+    tags: document.getElementById("lead-tags")?.value || "",
+    ownerId: document.getElementById("lead-owner-id")?.value || currentUser?.id || null,
+    followUpAt: followUpVal ? localInputToIso(followUpVal) : null,
+    socialLinks: {
+      website: document.getElementById("lead-social-website")?.value?.trim() || "",
+      linkedin: document.getElementById("lead-social-linkedin")?.value?.trim() || "",
+      instagram: document.getElementById("lead-social-instagram")?.value?.trim() || "",
+      x: document.getElementById("lead-social-x")?.value?.trim() || "",
+      facebook: ""
+    }
+  };
+
+  const btn = document.getElementById("lead-save-btn");
+  setButtonLoading(btn, true);
+  try {
+    if (id) {
+      await AlphaAPI.api(`/api/leads/${id}`, { method: "PUT", body: payload });
+      showToast("Lead updated");
+    } else {
+      await AlphaAPI.api("/api/leads", { method: "POST", body: payload });
+      showToast("Lead created");
+    }
+    document.getElementById("lead-form").hidden = true;
+    await refreshLeadsOnly();
+  } catch (err) {
+    showToast(err.message || "Could not save lead.", "error");
+  } finally {
+    setButtonLoading(btn, false);
+  }
+}
+
+function renderLeadsTable() {
+  const tbody = document.getElementById("leads-tbody");
+  const empty = document.getElementById("leads-empty");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  if (!cachedLeads.length) {
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+
+  cachedLeads.forEach((lead) => {
+    const tr = document.createElement("tr");
+    const follow = lead.followUpAt
+      ? new Date(lead.followUpAt).toLocaleString([], {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+      : "—";
+    tr.innerHTML = `
+      <td><strong>${escapeHtml(lead.name)}</strong>
+        ${(lead.tags || []).map((t) => `<span class="stage-pill">${escapeHtml(t)}</span>`).join(" ")}
+      </td>
+      <td>${escapeHtml(lead.email || "—")}<br><small>${escapeHtml(lead.phone || "")}</small></td>
+      <td>${escapeHtml(lead.company || "—")}</td>
+      <td><span class="stage-pill stage-${escapeHtml(lead.stage)}">${escapeHtml(LEAD_STAGE_LABELS[lead.stage] || lead.stage)}</span></td>
+      <td>${escapeHtml(lead.ownerName || "—")}</td>
+      <td>${escapeHtml(follow)}</td>
+      <td class="lead-actions">
+        <button type="button" class="btn-link" data-lead-view="${lead.id}">Open</button>
+        <button type="button" class="btn-link" data-lead-edit="${lead.id}">Edit</button>
+        <button type="button" class="btn-link danger" data-lead-delete="${lead.id}">Delete</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll("[data-lead-edit]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const lead = cachedLeads.find((l) => l.id === btn.getAttribute("data-lead-edit"));
+      if (lead) openLeadForm(lead);
+    });
+  });
+  tbody.querySelectorAll("[data-lead-delete]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await AlphaAPI.api(`/api/leads/${btn.getAttribute("data-lead-delete")}`, {
+          method: "DELETE"
+        });
+        showToast("Lead deleted", "info");
+        await refreshLeadsOnly();
+      } catch (err) {
+        showToast(err.message || "Delete failed.", "error");
+      }
+    });
+  });
+  tbody.querySelectorAll("[data-lead-view]").forEach((btn) => {
+    btn.addEventListener("click", () => openLeadDetail(btn.getAttribute("data-lead-view")));
+  });
+}
+
+async function openLeadDetail(id) {
+  selectedLeadId = id;
+  const panel = document.getElementById("lead-detail-panel");
+  if (panel) panel.hidden = false;
+  try {
+    const [detail, timeline] = await Promise.all([
+      AlphaAPI.api(`/api/leads/${id}`),
+      AlphaAPI.api(`/api/leads/${id}/timeline`)
+    ]);
+    const lead = detail.lead;
+    document.getElementById("lead-detail-title").textContent = lead.name;
+
+    const notesList = document.getElementById("lead-notes-list");
+    notesList.innerHTML = "";
+    (lead.notes || []).forEach((n) => {
+      const li = document.createElement("li");
+      li.className = "activity-item";
+      li.innerHTML = `<span class="activity-dot type-lead_note"></span>
+        <div><strong>${escapeHtml(n.body)}</strong>
+        <small>${escapeHtml(n.authorName || "")} · ${new Date(n.createdAt).toLocaleString()}</small></div>`;
+      notesList.appendChild(li);
+    });
+
+    const timelineList = document.getElementById("lead-timeline-list");
+    timelineList.innerHTML = "";
+    (timeline.timeline || []).slice(0, 20).forEach((item) => {
+      const li = document.createElement("li");
+      li.className = "activity-item";
+      li.innerHTML = `<span class="activity-dot type-${escapeHtml(item.kind)}"></span>
+        <div><strong>${escapeHtml(item.message)}</strong>
+        <small>${new Date(item.createdAt).toLocaleString()}</small></div>`;
+      timelineList.appendChild(li);
+    });
+
+    const historyList = document.getElementById("lead-history-list");
+    historyList.innerHTML = "";
+    (lead.statusHistory || []).forEach((h) => {
+      const li = document.createElement("li");
+      li.className = "activity-item";
+      const label = h.fromStage
+        ? `${LEAD_STAGE_LABELS[h.fromStage] || h.fromStage} → ${LEAD_STAGE_LABELS[h.toStage] || h.toStage}`
+        : `Created as ${LEAD_STAGE_LABELS[h.toStage] || h.toStage}`;
+      li.innerHTML = `<span class="activity-dot type-lead_stage"></span>
+        <div><strong>${escapeHtml(label)}</strong>
+        <small>${escapeHtml(h.note || "")} · ${new Date(h.createdAt).toLocaleString()}</small></div>`;
+      historyList.appendChild(li);
+    });
+  } catch (err) {
+    showToast(err.message || "Could not load lead detail.", "error");
+  }
+}
+
+function renderCrmBoard() {
+  const board = document.getElementById("crm-board");
+  if (!board) return;
+
+  LEAD_STAGES.forEach((stage) => {
+    const zone = board.querySelector(`[data-dropzone="${stage}"]`);
+    const countEl = board.querySelector(`[data-stage="${stage}"] [data-count]`);
+    if (!zone) return;
+    const stageLeads = cachedLeads.filter((l) => l.stage === stage);
+    if (countEl) countEl.textContent = String(stageLeads.length);
+    zone.innerHTML = "";
+    if (!stageLeads.length) {
+      zone.innerHTML = `<p class="crm-empty">No leads</p>`;
+    } else {
+      stageLeads.forEach((lead) => {
+        const card = document.createElement("article");
+        card.className = "crm-card";
+        card.draggable = true;
+        card.dataset.leadId = lead.id;
+        card.tabIndex = 0;
+        card.innerHTML = `
+          <strong>${escapeHtml(lead.name)}</strong>
+          <span>${escapeHtml(lead.company || lead.email || "No company")}</span>
+          <span>${escapeHtml(lead.ownerName || "Unassigned")}${lead.followUpAt ? ` · ${new Date(lead.followUpAt).toLocaleDateString()}` : ""}</span>
+          <div class="crm-card-actions">
+            <select aria-label="Move ${escapeHtml(lead.name)}" data-move-lead="${lead.id}">
+              ${LEAD_STAGES.map(
+                (s) =>
+                  `<option value="${s}" ${s === lead.stage ? "selected" : ""}>${LEAD_STAGE_LABELS[s]}</option>`
+              ).join("")}
+            </select>
+          </div>`;
+        zone.appendChild(card);
+      });
+    }
+  });
+
+  board.querySelectorAll(".crm-card").forEach((card) => {
+    card.addEventListener("dragstart", (e) => {
+      card.classList.add("dragging");
+      e.dataTransfer.setData("text/plain", card.dataset.leadId);
+      e.dataTransfer.effectAllowed = "move";
+    });
+    card.addEventListener("dragend", () => card.classList.remove("dragging"));
+  });
+
+  board.querySelectorAll("[data-dropzone]").forEach((zone) => {
+    zone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      zone.classList.add("drag-over");
+    });
+    zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+    zone.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      zone.classList.remove("drag-over");
+      const leadId = e.dataTransfer.getData("text/plain");
+      const stage = zone.getAttribute("data-dropzone");
+      if (!leadId || !stage) return;
+      try {
+        await AlphaAPI.api(`/api/leads/${leadId}/stage`, {
+          method: "PATCH",
+          body: { stage, note: "Moved via kanban" }
+        });
+        await refreshLeadsOnly();
+      } catch (err) {
+        showToast(err.message || "Could not move lead.", "error");
+      }
+    });
+  });
+
+  board.querySelectorAll("[data-move-lead]").forEach((select) => {
+    select.addEventListener("change", async () => {
+      try {
+        await AlphaAPI.api(`/api/leads/${select.getAttribute("data-move-lead")}/stage`, {
+          method: "PATCH",
+          body: { stage: select.value, note: "Moved via select" }
+        });
+        await refreshLeadsOnly();
+      } catch (err) {
+        showToast(err.message || "Could not move lead.", "error");
+      }
+    });
   });
 }

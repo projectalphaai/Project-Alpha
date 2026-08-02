@@ -13,6 +13,7 @@ import connectionsRoutes from "./routes/connections.js";
 import postsRoutes from "./routes/posts.js";
 import aiRoutes from "./routes/ai.js";
 import activityRoutes from "./routes/activity.js";
+import leadsRoutes from "./routes/leads.js";
 import { getPublisherWorkerConfig } from "./worker/publisherWorker.js";
 import { listProviders } from "./lib/oauth/registry.js";
 
@@ -61,7 +62,7 @@ export function createApp() {
     res.json({
       ok: true,
       service: "project-alpha",
-      sprint: 5,
+      sprint: 6,
       env: config.nodeEnv,
       database: "postgresql",
       openaiConfigured: Boolean(config.openai.apiKey),
@@ -91,6 +92,7 @@ export function createApp() {
   app.use("/api/posts", postsRoutes);
   app.use("/api/ai", aiRoutes);
   app.use("/api/activity", activityRoutes);
+  app.use("/api/leads", leadsRoutes);
 
   app.use(express.static(rootDir, { extensions: ["html"] }));
 
