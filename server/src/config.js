@@ -23,6 +23,7 @@ export const config = {
   appUrl: (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, ""),
   databaseUrl: requireEnv("DATABASE_URL"),
   jwtSecret: requireEnv("JWT_SECRET"),
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || "14d",
   tokenEncryptionKey: requireEnv("TOKEN_ENCRYPTION_KEY"),
   meta: {
     appId: requireEnv("META_APP_ID", { optional: !isProd }),
@@ -36,11 +37,14 @@ export const config = {
     apiKey: requireEnv("OPENAI_API_KEY", { optional: !isProd }),
     model: process.env.OPENAI_MODEL || "gpt-4o-mini"
   },
-  cookieName: "pa_session",
-  sessionTtlDays: 14
+  cookieName: process.env.AUTH_COOKIE_NAME || "pa_session",
+  sessionTtlDays: Number(process.env.SESSION_TTL_DAYS || 14)
 };
 
 export function assertRuntimeSecrets() {
+  if (!config.databaseUrl.startsWith("postgresql://") && !config.databaseUrl.startsWith("postgres://")) {
+    throw new Error("DATABASE_URL must be a PostgreSQL connection string (postgresql://...).");
+  }
   if (!config.jwtSecret || config.jwtSecret.length < 32) {
     throw new Error("JWT_SECRET must be at least 32 characters.");
   }

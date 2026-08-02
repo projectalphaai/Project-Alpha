@@ -9,7 +9,10 @@
     "start": "node server/src/index.js",
     "db:generate": "prisma generate --schema server/prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema server/prisma/schema.prisma",
+    "db:migrate:deploy": "prisma migrate deploy --schema server/prisma/schema.prisma",
     "db:push": "prisma db push --schema server/prisma/schema.prisma",
+    "db:studio": "prisma studio --schema server/prisma/schema.prisma",
+    "db:local": "node scripts/pg-local.mjs",
     "postinstall": "prisma generate --schema server/prisma/schema.prisma"
   },
   "engines": {
@@ -29,6 +32,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "embedded-postgres": "^18.4.0-beta.17",
     "prisma": "^6.13.0"
   },
   "overrides": {

@@ -2,11 +2,28 @@ import jwt from "jsonwebtoken";
 import { config } from "../config.js";
 import { prisma } from "../lib/prisma.js";
 
+const userSelect = {
+  id: true,
+  email: true,
+  name: true,
+  company: true,
+  timezone: true,
+  createdAt: true
+};
+
 export function signSession(user) {
   return jwt.sign(
-    { sub: user.id, email: user.email, name: user.name },
+    {
+      sub: user.id,
+      email: user.email,
+      name: user.name
+    },
     config.jwtSecret,
-    { expiresIn: `${config.sessionTtlDays}d` }
+    {
+      expiresIn: config.jwtExpiresIn,
+      issuer: "project-alpha",
+      audience: "project-alpha-api"
+    }
   );
 }
 
@@ -29,64 +46,74 @@ export function clearSessionCookie(res) {
   });
 }
 
+function extractToken(req) {
+  const header = req.headers.authorization;
+  if (header && header.startsWith("Bearer ")) {
+    return header.slice(7).trim();
+  }
+  return req.cookies?.[config.cookieName] || null;
+}
+
+function verifyToken(token) {
+  return jwt.verify(token, config.jwtSecret, {
+    issuer: "project-alpha",
+    audience: "project-alpha-api"
+  });
+}
+
+async function loadUser(userId) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: userSelect
+  });
+}
+
 export async function requireAuth(req, res, next) {
   try {
-    const token = req.cookies?.[config.cookieName];
+    const token = extractToken(req);
     if (!token) {
       return res.status(401).json({ ok: false, error: "Authentication required." });
     }
 
     let payload;
     try {
-      payload = jwt.verify(token, config.jwtSecret);
+      payload = verifyToken(token);
     } catch {
       clearSessionCookie(res);
       return res.status(401).json({ ok: false, error: "Session expired. Please log in again." });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        company: true,
-        timezone: true,
-        createdAt: true
-      }
-    });
-
+    const user = await loadUser(payload.sub);
     if (!user) {
       clearSessionCookie(res);
       return res.status(401).json({ ok: false, error: "Account not found." });
     }
 
     req.user = user;
-    next();
+    req.authToken = token;
+    return next();
   } catch (err) {
-    next(err);
+    return next(err);
   }
 }
 
 export async function optionalAuth(req, _res, next) {
   try {
-    const token = req.cookies?.[config.cookieName];
+    const token = extractToken(req);
     if (!token) return next();
-    const payload = jwt.verify(token, config.jwtSecret);
-    const user = await prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        company: true,
-        timezone: true,
-        createdAt: true
+
+    try {
+      const payload = verifyToken(token);
+      const user = await loadUser(payload.sub);
+      if (user) {
+        req.user = user;
+        req.authToken = token;
       }
-    });
-    if (user) req.user = user;
-    next();
-  } catch {
-    next();
+    } catch {
+      /* ignore invalid optional auth */
+    }
+    return next();
+  } catch (err) {
+    return next(err);
   }
 }

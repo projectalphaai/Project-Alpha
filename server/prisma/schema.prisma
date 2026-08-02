@@ -3,10 +3,11 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+/// Core authenticated account (Sprint 2 foundation)
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -21,24 +22,26 @@ model User {
   scheduledPosts    ScheduledPost[]
   contentDrafts     ContentDraft[]
   oauthStates       OAuthState[]
+
+  @@index([createdAt])
 }
 
 model ConnectedAccount {
-  id                String    @id @default(cuid())
-  userId            String
-  platform          String
-  accountId         String
-  accountName       String
-  accountUsername   String    @default("")
-  accessTokenEnc    String
-  refreshTokenEnc   String    @default("")
-  tokenExpiresAt    DateTime?
-  pageId            String    @default("")
-  pageAccessTokenEnc String   @default("")
-  scopes            String    @default("")
-  metadataJson      String    @default("{}")
-  connectedAt       DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  userId             String
+  platform           String
+  accountId          String
+  accountName        String
+  accountUsername    String    @default("")
+  accessTokenEnc     String
+  refreshTokenEnc    String    @default("")
+  tokenExpiresAt     DateTime?
+  pageId             String    @default("")
+  pageAccessTokenEnc String    @default("")
+  scopes             String    @default("")
+  metadataJson       String    @default("{}")
+  connectedAt        DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -47,15 +50,15 @@ model ConnectedAccount {
 }
 
 model ScheduledPost {
-  id        String   @id @default(cuid())
-  userId    String
-  platform  String
-  caption   String
-  mediaUrl  String   @default("")
+  id          String   @id @default(cuid())
+  userId      String
+  platform    String
+  caption     String
+  mediaUrl    String   @default("")
   scheduledAt DateTime
-  status    String   @default("scheduled")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status      String   @default("scheduled")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

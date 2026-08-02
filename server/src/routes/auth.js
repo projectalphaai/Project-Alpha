@@ -13,14 +13,14 @@ import {
 const router = Router();
 
 const signupSchema = z.object({
-  name: z.string().trim().min(2).max(80),
-  email: z.string().trim().email().max(120),
-  password: z.string().min(8).max(128)
+  name: z.string().trim().min(2, "Name must be at least 2 characters.").max(80),
+  email: z.string().trim().email("Enter a valid email address.").max(120),
+  password: z.string().min(8, "Password must be at least 8 characters.").max(128)
 });
 
 const loginSchema = z.object({
-  email: z.string().trim().email().max(120),
-  password: z.string().min(1).max(128)
+  email: z.string().trim().email("Enter a valid email address.").max(120),
+  password: z.string().min(1, "Enter your password.").max(128)
 });
 
 const profileSchema = z.object({
@@ -37,8 +37,15 @@ function publicUser(user) {
     email: user.email,
     name: user.name,
     company: user.company || "",
-    timezone: user.timezone || "UTC"
+    timezone: user.timezone || "UTC",
+    createdAt: user.createdAt || undefined
   };
+}
+
+function issueAuth(res, user) {
+  const token = signSession(user);
+  setSessionCookie(res, token);
+  return { token, user: publicUser(user) };
 }
 
 router.get("/me", optionalAuth, (req, res) => {
@@ -52,7 +59,10 @@ router.post("/signup", async (req, res, next) => {
   try {
     const parsed = signupSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ ok: false, error: parsed.error.issues[0]?.message || "Invalid input." });
+      return res.status(400).json({
+        ok: false,
+        error: parsed.error.issues[0]?.message || "Invalid input."
+      });
     }
 
     const email = parsed.data.email.toLowerCase();
@@ -70,9 +80,8 @@ router.post("/signup", async (req, res, next) => {
       }
     });
 
-    const token = signSession(user);
-    setSessionCookie(res, token);
-    return res.status(201).json({ ok: true, user: publicUser(user) });
+    const auth = issueAuth(res, user);
+    return res.status(201).json({ ok: true, ...auth });
   } catch (err) {
     next(err);
   }
@@ -96,9 +105,8 @@ router.post("/login", async (req, res, next) => {
       return res.status(401).json({ ok: false, error: "Invalid email or password." });
     }
 
-    const token = signSession(user);
-    setSessionCookie(res, token);
-    return res.json({ ok: true, user: publicUser(user) });
+    const auth = issueAuth(res, user);
+    return res.json({ ok: true, ...auth });
   } catch (err) {
     next(err);
   }
@@ -109,11 +117,22 @@ router.post("/logout", (_req, res) => {
   return res.json({ ok: true });
 });
 
+router.get("/protected", requireAuth, (req, res) => {
+  return res.json({
+    ok: true,
+    message: "Protected route access granted.",
+    user: publicUser(req.user)
+  });
+});
+
 router.put("/profile", requireAuth, async (req, res, next) => {
   try {
     const parsed = profileSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ ok: false, error: parsed.error.issues[0]?.message || "Invalid profile data." });
+      return res.status(400).json({
+        ok: false,
+        error: parsed.error.issues[0]?.message || "Invalid profile data."
+      });
     }
 
     const email = parsed.data.email.toLowerCase();
@@ -140,9 +159,8 @@ router.put("/profile", requireAuth, async (req, res, next) => {
       data
     });
 
-    const token = signSession(user);
-    setSessionCookie(res, token);
-    return res.json({ ok: true, user: publicUser(user) });
+    const auth = issueAuth(res, user);
+    return res.json({ ok: true, ...auth });
   } catch (err) {
     next(err);
   }

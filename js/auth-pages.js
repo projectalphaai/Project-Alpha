@@ -1,4 +1,4 @@
-/* Login / Signup page handlers — Sprint 1 API */
+/* Login / Signup page handlers — Sprint 2 PostgreSQL + JWT API */
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (!window.AlphaAuth || !window.AlphaAPI) return;
