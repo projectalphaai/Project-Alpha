@@ -12,6 +12,45 @@ const CANCELABLE = new Set(["draft", "scheduled", "failed"]);
 const RETRYABLE = new Set(["failed"]);
 
 const platforms = ["instagram", "facebook", "linkedin", "x", "youtube"];
+const META_LIVE_PLATFORMS = new Set(["instagram", "facebook"]);
+
+async function assertConnectionForSchedule(userId, platform, { mediaUrl = "", status = "scheduled" } = {}) {
+  if (status === "draft") return null;
+  if (!META_LIVE_PLATFORMS.has(platform)) return null;
+
+  const connection = await prisma.connectedAccount.findFirst({
+    where: {
+      userId,
+      platform,
+      status: { not: "revoked" },
+      reconnectRequired: false
+    },
+    orderBy: { connectedAt: "desc" }
+  });
+
+  if (!connection) {
+    const err = new Error(
+      `Connect an active ${platform} account before scheduling. Open Social Connections to connect.`
+    );
+    err.status = 409;
+    throw err;
+  }
+
+  if (platform === "instagram" && status === "scheduled") {
+    try {
+      const u = new URL(String(mediaUrl || ""));
+      if (u.protocol !== "http:" && u.protocol !== "https:") throw new Error("bad");
+    } catch {
+      const err = new Error(
+        "Instagram schedules require a public image URL in mediaUrl (Meta Content Publishing API)."
+      );
+      err.status = 400;
+      throw err;
+    }
+  }
+
+  return connection;
+}
 
 const postSchema = z.object({
   platform: z.enum(platforms, { errorMap: () => ({ message: "Select a valid platform." }) }),
@@ -111,6 +150,88 @@ router.get("/queue", requireAuth, async (req, res, next) => {
   }
 });
 
+/** Publish history: published + failed with success/failure detail. */
+router.get("/history", requireAuth, async (req, res, next) => {
+  try {
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit || 50)));
+    const posts = await prisma.scheduledPost.findMany({
+      where: {
+        userId: req.user.id,
+        status: { in: ["published", "failed"] }
+      },
+      orderBy: [{ updatedAt: "desc" }],
+      take: limit
+    });
+
+    const history = posts.map((p) => ({
+      ...serializePost(p),
+      outcome: p.status === "published" ? "success" : "failure",
+      detail:
+        p.status === "published"
+          ? p.externalPostId
+            ? `Published (id: ${p.externalPostId})`
+            : "Published"
+          : p.errorMessage || "Publish failed"
+    }));
+
+    return res.json({
+      ok: true,
+      history,
+      counts: {
+        published: history.filter((h) => h.outcome === "success").length,
+        failed: history.filter((h) => h.outcome === "failure").length
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Founder / ops snapshot for first paying customer readiness. */
+router.get("/founder-stats", requireAuth, async (req, res, next) => {
+  try {
+    const [accounts, scheduled, published, failed, processing] = await Promise.all([
+      prisma.connectedAccount.count({
+        where: { userId: req.user.id, status: { not: "revoked" } }
+      }),
+      prisma.scheduledPost.count({
+        where: { userId: req.user.id, status: "scheduled" }
+      }),
+      prisma.scheduledPost.count({
+        where: { userId: req.user.id, status: "published" }
+      }),
+      prisma.scheduledPost.count({
+        where: { userId: req.user.id, status: "failed" }
+      }),
+      prisma.scheduledPost.count({
+        where: { userId: req.user.id, status: "processing" }
+      })
+    ]);
+
+    const activeConnections = await prisma.connectedAccount.count({
+      where: {
+        userId: req.user.id,
+        status: "active",
+        reconnectRequired: false
+      }
+    });
+
+    return res.json({
+      ok: true,
+      stats: {
+        connectedAccounts: accounts,
+        activeConnections,
+        scheduledPosts: scheduled,
+        processingPosts: processing,
+        publishedPosts: published,
+        failedPosts: failed
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post("/", requireAuth, async (req, res, next) => {
   try {
     const parsed = postSchema.safeParse(req.body);
@@ -130,6 +251,15 @@ router.post("/", requireAuth, async (req, res, next) => {
       if (!scheduledAt || scheduledAt <= new Date()) {
         return res.status(400).json({ ok: false, error: "Choose a future date and time." });
       }
+    }
+
+    try {
+      await assertConnectionForSchedule(req.user.id, parsed.data.platform, {
+        mediaUrl: parsed.data.mediaUrl || "",
+        status: saveAs
+      });
+    } catch (err) {
+      return res.status(err.status || 400).json({ ok: false, error: err.message });
     }
 
     const post = await prisma.scheduledPost.create({
@@ -190,6 +320,15 @@ router.put("/:id", requireAuth, async (req, res, next) => {
       if (!scheduledAt || scheduledAt <= new Date()) {
         return res.status(400).json({ ok: false, error: "Choose a future date and time." });
       }
+    }
+
+    try {
+      await assertConnectionForSchedule(req.user.id, parsed.data.platform, {
+        mediaUrl: parsed.data.mediaUrl || "",
+        status: saveAs
+      });
+    } catch (err) {
+      return res.status(err.status || 400).json({ ok: false, error: err.message });
     }
 
     const post = await prisma.scheduledPost.update({
@@ -267,13 +406,14 @@ router.post("/:id/retry", requireAuth, async (req, res, next) => {
       });
     }
 
-    // Re-queue immediately: set scheduledAt to now so the worker picks it up.
+    // Re-queue immediately; reset attempt counter for a fresh retry cycle.
     const post = await prisma.scheduledPost.update({
       where: { id: existing.id },
       data: {
         status: "scheduled",
         scheduledAt: new Date(),
-        errorMessage: ""
+        errorMessage: "",
+        attemptCount: 0
       }
     });
 

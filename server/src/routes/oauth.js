@@ -135,10 +135,31 @@ async function handleCallback(req, res) {
       );
     }
 
-    const accounts = await provider.exchangeCode({
+    const accountsRaw = await provider.exchangeCode({
       code: String(code),
       codeVerifier: oauthState.codeVerifier || ""
     });
+
+    let reconnectMeta = {};
+    try {
+      reconnectMeta = JSON.parse(oauthState.metaJson || "{}");
+    } catch {
+      reconnectMeta = {};
+    }
+
+    let accounts = accountsRaw;
+    if (oauthState.mode === "reconnect" && reconnectMeta.accountId) {
+      accounts = accountsRaw.filter((a) => String(a.accountId) === String(reconnectMeta.accountId));
+      if (!accounts.length) {
+        return res.redirect(
+          frontendRedirect({
+            oauth: "error",
+            platform,
+            message: `Reconnect failed: account ${reconnectMeta.accountId} was not returned by ${PLATFORM_LABELS[platform] || platform}. Check permissions and try again.`
+          })
+        );
+      }
+    }
 
     if (!accounts?.length) {
       return res.redirect(
@@ -151,7 +172,9 @@ async function handleCallback(req, res) {
     }
 
     await upsertConnectedAccounts(oauthState.userId, platform, accounts, {
-      mode: oauthState.mode || "connect"
+      mode: oauthState.mode || "connect",
+      targetAccountId: reconnectMeta.accountId || null,
+      targetConnectionId: reconnectMeta.connectionId || null
     });
 
     return res.redirect(

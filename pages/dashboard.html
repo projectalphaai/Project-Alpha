@@ -156,6 +156,14 @@
                     </div>
                     <div class="stat-card glass-panel">
                         <div class="stat-card-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        </div>
+                        <h3>Active Connections</h3>
+                        <p class="stat-value" id="stat-active-connections" data-count="0">0</p>
+                        <span class="stat-change" id="stat-active-meta">Healthy tokens</span>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-card-icon">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
                         </div>
                         <h3>Scheduled Posts</h3>
@@ -166,25 +174,41 @@
                         <div class="stat-card-icon">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                         </div>
-                        <h3>Posts Published</h3>
+                        <h3>Published Posts</h3>
                         <p class="stat-value" id="stat-published" data-count="0">0</p>
-                        <span class="stat-change" id="stat-published-meta">Via publish queue</span>
+                        <span class="stat-change" id="stat-published-meta">Live Graph publish</span>
                     </div>
                     <div class="stat-card glass-panel">
                         <div class="stat-card-icon">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
                         </div>
-                        <h3>Failed Jobs</h3>
+                        <h3>Failed Posts</h3>
                         <p class="stat-value" id="stat-failed" data-count="0">0</p>
                         <span class="stat-change" id="stat-failed-meta">Retry from queue</span>
                     </div>
+                </div>
+
+                <div class="glass-panel nested-panel" id="founder-dashboard" style="margin:16px 0;padding:18px">
+                    <div class="panel-header">
+                        <h3>Founder Dashboard</h3>
+                        <button type="button" class="btn btn-outline-glow btn-sm" id="run-connection-health">Run health checks</button>
+                    </div>
+                    <p class="section-lead" style="margin-top:0">First-customer ops snapshot: connections, queue, and publish outcomes.</p>
+                    <div class="stats-grid" id="founder-stats-grid">
+                        <div class="stat-card"><h3>Connected Accounts</h3><p class="stat-value" id="founder-connected">0</p></div>
+                        <div class="stat-card"><h3>Active Connections</h3><p class="stat-value" id="founder-active">0</p></div>
+                        <div class="stat-card"><h3>Scheduled</h3><p class="stat-value" id="founder-scheduled">0</p></div>
+                        <div class="stat-card"><h3>Published</h3><p class="stat-value" id="founder-published">0</p></div>
+                        <div class="stat-card"><h3>Failed</h3><p class="stat-value" id="founder-failed">0</p></div>
+                    </div>
+                    <p class="panel-meta" id="connection-health-summary" style="margin-top:12px">Health: not checked yet.</p>
                 </div>
 
                 <div class="overview-grid">
                     <div class="chart-card glass-panel week-chart-card">
                         <div class="panel-header">
                             <h3>Weekly Performance</h3>
-                            <span class="panel-meta">Reach · last 7 days</span>
+                            <span class="panel-meta">Scheduled posts · last 7 days</span>
                         </div>
                         <div class="week-chart" id="week-chart" role="img" aria-label="Weekly reach performance chart"></div>
                     </div>
@@ -233,13 +257,14 @@
             <!-- Scheduler -->
             <section id="schedule" class="dashboard-section" aria-labelledby="schedule-heading">
                 <h2 id="schedule-heading">Scheduler</h2>
-                <p class="section-lead">Plan posts on the calendar, manage the publish queue, and track status in PostgreSQL. Publishing uses a mock adapter until social APIs are connected.</p>
+                <p class="section-lead">Plan posts on the calendar, manage the publish queue, and track live Instagram/Facebook publishing in PostgreSQL.</p>
 
                 <div class="scheduler-toolbar">
                     <div class="view-toggle" role="group" aria-label="Scheduler view">
                         <button type="button" class="view-toggle-btn active" data-scheduler-view="calendar" aria-pressed="true">Calendar</button>
                         <button type="button" class="view-toggle-btn" data-scheduler-view="list" aria-pressed="false">List</button>
                         <button type="button" class="view-toggle-btn" data-scheduler-view="queue" aria-pressed="false">Queue</button>
+                        <button type="button" class="view-toggle-btn" data-scheduler-view="history" aria-pressed="false">History</button>
                     </div>
                     <button type="button" class="btn btn-glow btn-sm" id="open-schedule-modal">
                         <span class="btn-label">Create Scheduled Post</span>
@@ -283,6 +308,15 @@
                         </div>
                         <ul class="scheduled-posts-list" id="publish-queue-list"></ul>
                         <p class="empty-state" id="queue-empty" hidden>Queue is empty. Schedule a post to enqueue it.</p>
+                    </div>
+
+                    <div class="scheduled-list-panel glass-panel" id="scheduler-history-view" hidden>
+                        <div class="panel-header">
+                            <h3>Publish history</h3>
+                            <span class="panel-meta" id="history-counts">Success · failure</span>
+                        </div>
+                        <ul class="scheduled-posts-list" id="publish-history-list"></ul>
+                        <p class="empty-state" id="history-empty" hidden>No published or failed posts yet.</p>
                     </div>
                 </div>
             </section>

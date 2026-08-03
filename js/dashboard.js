@@ -250,6 +250,7 @@ function initQuickActions() {
 
 let cachedActivity = [];
 let cachedLeads = [];
+let cachedFounderStats = {};
 let leadStats = { total: 0, open: 0, byStage: {}, followUpsDue: 0 };
 let selectedLeadId = null;
 let dashboardPollTimer = null;
@@ -267,25 +268,30 @@ const LEAD_STAGE_LABELS = {
 
 async function refreshAllData() {
   try {
-    const [connData, postsData, activityData, leadsData, statsData, meData] = await Promise.all([
-      AlphaAPI.api("/api/connections"),
-      AlphaAPI.api("/api/posts"),
-      AlphaAPI.api("/api/activity?limit=30"),
-      AlphaAPI.api(buildLeadsQuery()),
-      AlphaAPI.api("/api/leads/stats"),
-      AlphaAPI.api("/api/auth/me")
-    ]);
+    const [connData, postsData, activityData, leadsData, statsData, meData, founderData] =
+      await Promise.all([
+        AlphaAPI.api("/api/connections"),
+        AlphaAPI.api("/api/posts"),
+        AlphaAPI.api("/api/activity?limit=30"),
+        AlphaAPI.api(buildLeadsQuery()),
+        AlphaAPI.api("/api/leads/stats"),
+        AlphaAPI.api("/api/auth/me"),
+        AlphaAPI.api("/api/posts/founder-stats")
+      ]);
     cachedConnections = connData.connections || {};
     cachedPosts = postsData.posts || [];
     cachedActivity = activityData.activity || [];
     cachedLeads = leadsData.leads || [];
     leadStats = statsData;
     currentUser = meData.user || null;
+    cachedFounderStats = founderData.stats || {};
     renderConnections();
     renderOverview();
+    renderFounderDashboard();
     renderCalendar();
     renderScheduledList();
     renderPublishQueue();
+    renderPublishHistory();
     renderUpcoming();
     renderActivityFromData();
     renderWeekChart();
@@ -320,6 +326,9 @@ function startDashboardPolling() {
 
 function renderOverview() {
   const connectedCount = Object.values(cachedConnections).filter((c) => c.connected).length;
+  const activeConnections =
+    cachedFounderStats.activeConnections ??
+    Object.values(cachedConnections).filter((c) => c.connected && !c.reconnectRequired).length;
   const upcoming = cachedPosts.filter(
     (p) => p.status === "scheduled" || p.status === "processing"
   );
@@ -327,13 +336,27 @@ function renderOverview() {
   const failed = cachedPosts.filter((p) => p.status === "failed").length;
 
   setStat("stat-connected", connectedCount);
+  setStat("stat-active-connections", activeConnections);
   setStat("scheduled-count", upcoming.length);
   setStat("stat-published", published);
   setStat("stat-failed", failed);
   setText("stat-connected-meta", "of 5 platforms");
+  setText(
+    "stat-active-meta",
+    activeConnections ? "Healthy tokens" : "Connect Instagram or Facebook"
+  );
   setText("stat-scheduled-meta", upcoming.length ? `${upcoming.length} in queue` : "Queue is empty");
-  setText("stat-published-meta", published ? "Mock publisher" : "None published yet");
+  setText("stat-published-meta", published ? "Live Graph publish" : "None published yet");
   setText("stat-failed-meta", failed ? "Retry from queue" : "No failures");
+}
+
+function renderFounderDashboard() {
+  const s = cachedFounderStats || {};
+  setStat("founder-connected", s.connectedAccounts ?? 0);
+  setStat("founder-active", s.activeConnections ?? 0);
+  setStat("founder-scheduled", s.scheduledPosts ?? 0);
+  setStat("founder-published", s.publishedPosts ?? 0);
+  setStat("founder-failed", s.failedPosts ?? 0);
 }
 
 function setStat(id, value) {
@@ -463,6 +486,7 @@ function initSchedulerViews() {
   const calendarView = document.getElementById("scheduler-calendar-view");
   const listView = document.getElementById("scheduler-list-view");
   const queueView = document.getElementById("scheduler-queue-view");
+  const historyView = document.getElementById("scheduler-history-view");
   document.querySelectorAll("[data-scheduler-view]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const view = btn.getAttribute("data-scheduler-view");
@@ -474,8 +498,10 @@ function initSchedulerViews() {
       if (calendarView) calendarView.hidden = view !== "calendar";
       if (listView) listView.hidden = view !== "list";
       if (queueView) queueView.hidden = view !== "queue";
+      if (historyView) historyView.hidden = view !== "history";
       if (view === "list") renderScheduledList();
       if (view === "queue") renderPublishQueue();
+      if (view === "history") renderPublishHistory();
     });
   });
 
@@ -492,6 +518,23 @@ function initSchedulerViews() {
     const now = new Date();
     calendarViewDate = new Date(now.getFullYear(), now.getMonth(), 1);
     renderCalendar();
+  });
+
+  document.getElementById("run-connection-health")?.addEventListener("click", async () => {
+    const summary = document.getElementById("connection-health-summary");
+    try {
+      if (summary) summary.textContent = "Running live health checks…";
+      const data = await AlphaAPI.api("/api/connections/health");
+      const s = data.summary || {};
+      if (summary) {
+        summary.textContent = `Health: ${s.healthy || 0} healthy · ${s.unhealthy || 0} unhealthy · ${s.total || 0} total`;
+      }
+      showToast("Connection health checks complete");
+      await refreshAllData();
+    } catch (err) {
+      if (summary) summary.textContent = err.message || "Health check failed.";
+      showToast(err.message || "Health check failed.", "error");
+    }
   });
 }
 
@@ -702,6 +745,55 @@ function renderPublishQueue() {
         <strong>${escapeHtml(caption.slice(0, 90))}${caption.length > 90 ? "…" : ""}</strong>
         <small>Due ${escapeHtml(when)} · attempts ${post.attemptCount || 0}/${post.maxAttempts || 3}</small>
         ${post.errorMessage ? `<small class="post-error">${escapeHtml(post.errorMessage)}</small>` : ""}
+      </div>
+      <div class="scheduled-post-actions">${postActionButtons(post)}</div>`;
+    list.appendChild(li);
+  });
+  bindPostActions(list);
+}
+
+function renderPublishHistory() {
+  const list = document.getElementById("publish-history-list");
+  const empty = document.getElementById("history-empty");
+  const counts = document.getElementById("history-counts");
+  if (!list) return;
+
+  const history = cachedPosts
+    .filter((p) => p.status === "published" || p.status === "failed")
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt || b.publishedAt || 0) - new Date(a.updatedAt || a.publishedAt || 0)
+    );
+
+  if (counts) {
+    const ok = history.filter((p) => p.status === "published").length;
+    const bad = history.filter((p) => p.status === "failed").length;
+    counts.textContent = `${ok} success · ${bad} failure`;
+  }
+
+  list.innerHTML = "";
+  if (!history.length) {
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+
+  history.forEach((post) => {
+    const li = document.createElement("li");
+    li.className = "scheduled-post-item";
+    const caption = post.caption || post.content || "";
+    const detail =
+      post.status === "published"
+        ? post.externalPostId
+          ? `External id: ${post.externalPostId}`
+          : "Published successfully"
+        : post.errorMessage || "Publish failed";
+    li.innerHTML = `
+      <div class="scheduled-post-main">
+        <span class="platform-pill platform-${escapeHtml(post.platform)}">${escapeHtml(PLATFORM_LABELS[post.platform] || post.platform)}</span>
+        ${statusBadge(post.status)}
+        <strong>${escapeHtml(caption.slice(0, 90))}${caption.length > 90 ? "…" : ""}</strong>
+        <small>${escapeHtml(detail)}</small>
       </div>
       <div class="scheduled-post-actions">${postActionButtons(post)}</div>`;
     list.appendChild(li);
@@ -1084,8 +1176,9 @@ function renderConnectedAccountsList() {
       <div class="scheduled-post-actions">
         ${
           acc.reconnectRequired
-            ? `<button type="button" class="btn btn-outline-glow btn-sm" data-reconnect-id="${acc.id}" data-platform="${acc.platform}">Reconnect</button>`
-            : `<button type="button" class="btn btn-outline-glow btn-sm" data-refresh-id="${acc.id}">Refresh token</button>`
+            ? `<button type="button" class="btn btn-outline-glow btn-sm" data-reconnect-id="${acc.id}" data-platform="${acc.platform}" data-account-id="${acc.accountId}">Reconnect</button>`
+            : `<button type="button" class="btn btn-outline-glow btn-sm" data-refresh-id="${acc.id}">Refresh token</button>
+               <button type="button" class="btn btn-outline-glow btn-sm" data-validate-id="${acc.id}">Validate</button>`
         }
         <button type="button" class="btn btn-outline-glow btn-sm danger" data-disconnect-id="${acc.id}">Disconnect</button>
       </div>`;
@@ -1120,6 +1213,21 @@ function renderConnectedAccountsList() {
     });
   });
 
+  list.querySelectorAll("[data-validate-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await AlphaAPI.api(`/api/connections/${btn.getAttribute("data-validate-id")}/validate`, {
+          method: "POST"
+        });
+        showToast("Connection validated with Meta Graph API");
+        await refreshAllData();
+      } catch (err) {
+        showToast(err.message || "Validation failed. Reconnect required.", "error");
+        await refreshAllData();
+      }
+    });
+  });
+
   list.querySelectorAll("[data-reconnect-id]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-reconnect-id");
@@ -1129,7 +1237,7 @@ function renderConnectedAccountsList() {
       } catch {
         /* continue */
       }
-      startOAuthFlow(platform, { mode: "reconnect", connectionId: id });
+      startOAuthFlow(platform, { mode: "reconnect", connectionId: id, accountId: btn.getAttribute("data-account-id") });
     });
   });
 }

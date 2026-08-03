@@ -9,9 +9,87 @@ import {
   serializeConnection,
   syncExpiryFlagsForUser
 } from "../lib/oauth/tokenService.js";
+import { getProvider } from "../lib/oauth/registry.js";
+import { decryptSecret } from "../lib/crypto.js";
 import { logActivity } from "../lib/activity.js";
+import { friendlyConnectionError } from "../lib/friendlyErrors.js";
 
 const router = Router();
+
+router.get("/health", requireAuth, requireRole("member"), async (req, res, next) => {
+  try {
+    await syncExpiryFlagsForUser(req.user.id);
+    const rows = await prisma.connectedAccount.findMany({
+      where: { userId: req.user.id },
+      orderBy: [{ platform: "asc" }, { connectedAt: "desc" }]
+    });
+
+    const results = [];
+    for (const row of rows) {
+      const base = serializeConnection(row, { includeSecrets: true });
+      const provider = getProvider(row.platform);
+      let health = {
+        status: base.status,
+        healthy: base.status === "active" && !base.reconnectRequired,
+        checkedAt: new Date().toISOString(),
+        message: base.reconnectRequired ? "Reconnect required." : "Stored connection looks active."
+      };
+
+      if (provider?.validateConnection && provider.isConfigured() && !base.reconnectRequired) {
+        try {
+          const accessToken = row.accessTokenEnc ? decryptSecret(row.accessTokenEnc) : "";
+          const pageAccessToken = row.pageAccessTokenEnc ? decryptSecret(row.pageAccessTokenEnc) : "";
+          await provider.validateConnection({
+            accessToken,
+            pageAccessToken,
+            accountId: row.accountId
+          });
+          await prisma.connectedAccount.update({
+            where: { id: row.id },
+            data: { lastValidatedAt: new Date(), status: "active", reconnectRequired: false }
+          });
+          health = {
+            status: "active",
+            healthy: true,
+            checkedAt: new Date().toISOString(),
+            message: "Live Graph validation passed."
+          };
+        } catch (err) {
+          await prisma.connectedAccount.update({
+            where: { id: row.id },
+            data: { status: "expired", reconnectRequired: true }
+          });
+          health = {
+            status: "expired",
+            healthy: false,
+            checkedAt: new Date().toISOString(),
+            message: friendlyConnectionError(err.message)
+          };
+        }
+      } else if (!provider?.validateConnection) {
+        health.message = "Live validation not available for this platform; using stored status.";
+      }
+
+      results.push({
+        ...base,
+        health
+      });
+    }
+
+    const healthyCount = results.filter((r) => r.health.healthy).length;
+    return res.json({
+      ok: true,
+      summary: {
+        total: results.length,
+        healthy: healthyCount,
+        unhealthy: results.length - healthyCount
+      },
+      connections: results
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.get("/", requireAuth, requireRole("member"), async (req, res, next) => {
   try {
@@ -81,6 +159,93 @@ router.post("/:id/refresh", requireAuth, requireRole("member"), async (req, res,
     return res.status(status).json({
       ok: false,
       error: err.message || "Token refresh failed."
+    });
+  }
+});
+
+/** Validate tokens still work against the provider Graph API (Instagram/Meta). */
+router.post("/:id/validate", requireAuth, requireRole("member"), async (req, res, next) => {
+  try {
+    const row = await prisma.connectedAccount.findFirst({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+    if (!row) {
+      return res.status(404).json({ ok: false, error: "Connection not found." });
+    }
+
+    const provider = getProvider(row.platform);
+    if (!provider?.validateConnection) {
+      return res.status(409).json({
+        ok: false,
+        error: `${row.platform} does not support live token validation yet.`
+      });
+    }
+    if (!provider.isConfigured()) {
+      return res.status(503).json({
+        ok: false,
+        error: `${row.platform} OAuth credentials are not configured.`
+      });
+    }
+
+    const accessToken = row.accessTokenEnc ? decryptSecret(row.accessTokenEnc) : "";
+    const pageAccessToken = row.pageAccessTokenEnc ? decryptSecret(row.pageAccessTokenEnc) : "";
+
+    const result = await provider.validateConnection({
+      accessToken,
+      pageAccessToken,
+      accountId: row.accountId,
+      metadata: (() => {
+        try {
+          return JSON.parse(row.metadataJson || "{}");
+        } catch {
+          return {};
+        }
+      })()
+    });
+
+    const updated = await prisma.connectedAccount.update({
+      where: { id: row.id },
+      data: {
+        lastValidatedAt: new Date(),
+        status: "active",
+        reconnectRequired: false,
+        accountUsername:
+          result.account?.username || result.page?.name || row.accountUsername,
+        accountName: result.account?.name || result.page?.name || row.accountName
+      }
+    });
+
+    await logActivity({
+      userId: req.user.id,
+      type: "oauth_validate",
+      message: `Validated ${row.platform} connection ${row.accountName || row.accountId}`,
+      meta: { platform: row.platform, accountId: row.accountId, connectionId: row.id }
+    });
+
+    return res.json({
+      ok: true,
+      validation: result,
+      connection: serializeConnection(updated, { includeSecrets: true })
+    });
+  } catch (err) {
+    try {
+      const row = await prisma.connectedAccount.findFirst({
+        where: { id: req.params.id, userId: req.user.id }
+      });
+      if (row) {
+        await prisma.connectedAccount.update({
+          where: { id: row.id },
+          data: { status: "expired", reconnectRequired: true }
+        });
+      }
+    } catch {
+      /* ignore */
+    }
+    const status = err.status || 502;
+    return res.status(status).json({
+      ok: false,
+      error: err.message || "Connection validation failed.",
+      reconnectRequired: true
     });
   }
 });

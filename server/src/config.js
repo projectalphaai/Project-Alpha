@@ -33,7 +33,7 @@ export const config = {
   meta: {
     appId: requireEnv("META_APP_ID", { optional: !isProd }),
     appSecret: requireEnv("META_APP_SECRET", { optional: !isProd }),
-    graphVersion: process.env.META_GRAPH_VERSION || "v21.0",
+    graphVersion: process.env.META_GRAPH_VERSION || "v22.0",
     redirectUri:
       optionalEnv("META_OAUTH_REDIRECT_URI") || `${appUrl}/api/oauth/meta/callback`
   },

@@ -62,14 +62,17 @@ export function createApp() {
     res.json({
       ok: true,
       service: "project-alpha",
-      sprint: 6,
+      sprint: 8,
       env: config.nodeEnv,
       database: "postgresql",
       openaiConfigured: Boolean(config.openai.apiKey),
       publishWorker: {
         enabled: worker.enabled,
         adapter: worker.adapter,
-        intervalMs: worker.intervalMs
+        intervalMs: worker.intervalMs,
+        publishAdapterMode: worker.publishAdapterMode,
+        productionSafe: worker.productionSafe,
+        adapterError: worker.adapterError
       },
       oauth: oauthProviderStatus(),
       oauthProviders: listProviders()

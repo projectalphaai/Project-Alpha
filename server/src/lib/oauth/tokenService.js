@@ -42,9 +42,18 @@ export function serializeConnection(row, { includeSecrets = false } = {}) {
   return base;
 }
 
-export async function upsertConnectedAccounts(userId, platform, accounts, { mode = "connect" } = {}) {
+export async function upsertConnectedAccounts(
+  userId,
+  platform,
+  accounts,
+  { mode = "connect", targetAccountId = null, targetConnectionId = null } = {}
+) {
   const saved = [];
   for (const account of accounts) {
+    if (targetAccountId && String(account.accountId) !== String(targetAccountId)) {
+      continue;
+    }
+
     const data = {
       accountName: account.accountName || PLATFORM_FALLBACK(platform),
       accountUsername: account.accountUsername || "",
@@ -54,7 +63,10 @@ export async function upsertConnectedAccounts(userId, platform, accounts, { mode
       pageAccessTokenEnc: encryptSecret(account.pageAccessToken || ""),
       tokenExpiresAt: account.expiresAt || null,
       scopes: Array.isArray(account.scopes) ? account.scopes.join(",") : account.scopes || "",
-      metadataJson: JSON.stringify(account.metadata || {}),
+      metadataJson: JSON.stringify({
+        ...(account.metadata || {}),
+        ...(targetConnectionId ? { reconnectedFrom: targetConnectionId } : {})
+      }),
       status: "active",
       reconnectRequired: false,
       lastRefreshedAt: new Date(),
@@ -80,6 +92,16 @@ export async function upsertConnectedAccounts(userId, platform, accounts, { mode
     saved.push(row);
   }
 
+  if (!saved.length) {
+    const err = new Error(
+      targetAccountId
+        ? `No matching ${platform} account ${targetAccountId} to save after OAuth.`
+        : `No ${platform} accounts were saved after OAuth.`
+    );
+    err.status = 400;
+    throw err;
+  }
+
   await logActivity({
     userId,
     type: mode === "reconnect" ? "oauth_reconnect" : "oauth_connect",
@@ -87,7 +109,8 @@ export async function upsertConnectedAccounts(userId, platform, accounts, { mode
     meta: {
       platform,
       accountIds: saved.map((s) => s.accountId),
-      mode
+      mode,
+      targetAccountId: targetAccountId || null
     }
   });
 
@@ -130,10 +153,6 @@ export async function refreshConnectionTokens(row) {
     throw err;
   }
 
-  if (isTokenExpired(row.tokenExpiresAt) === false && row.status === "active") {
-    // Still allow explicit refresh if refresh token exists.
-  }
-
   const refreshToken = row.refreshTokenEnc ? decryptSecret(row.refreshTokenEnc) : "";
   const accessToken = row.accessTokenEnc ? decryptSecret(row.accessTokenEnc) : "";
 
@@ -143,29 +162,46 @@ export async function refreshConnectionTokens(row) {
     throw err;
   }
 
+  if (!accessToken && !refreshToken) {
+    await markConnectionExpired(row, "No tokens available");
+    const err = new Error("No tokens available. Please reconnect.");
+    err.status = 409;
+    throw err;
+  }
+
   let refreshed;
   try {
     refreshed = await provider.refreshAccessToken({
       refreshToken,
       accessToken,
-      metadata: safeJson(row.metadataJson)
+      metadata: {
+        ...safeJson(row.metadataJson),
+        pageId: row.pageId || null,
+        accountId: row.accountId
+      }
     });
   } catch (err) {
     await markConnectionExpired(row, err.message || "Refresh failed");
     throw err;
   }
 
+  const updateData = {
+    accessTokenEnc: encryptSecret(refreshed.accessToken || accessToken),
+    refreshTokenEnc: encryptSecret(refreshed.refreshToken || refreshToken),
+    tokenExpiresAt: refreshed.expiresAt || row.tokenExpiresAt,
+    status: "active",
+    reconnectRequired: false,
+    lastRefreshedAt: new Date(),
+    lastValidatedAt: new Date()
+  };
+
+  if (refreshed.pageAccessToken) {
+    updateData.pageAccessTokenEnc = encryptSecret(refreshed.pageAccessToken);
+  }
+
   const updated = await prisma.connectedAccount.update({
     where: { id: row.id },
-    data: {
-      accessTokenEnc: encryptSecret(refreshed.accessToken || accessToken),
-      refreshTokenEnc: encryptSecret(refreshed.refreshToken || refreshToken),
-      tokenExpiresAt: refreshed.expiresAt || row.tokenExpiresAt,
-      status: "active",
-      reconnectRequired: false,
-      lastRefreshedAt: new Date(),
-      lastValidatedAt: new Date()
-    }
+    data: updateData
   });
 
   await logActivity({
@@ -176,6 +212,25 @@ export async function refreshConnectionTokens(row) {
   });
 
   return updated;
+}
+
+/**
+ * Ensure a connection has a usable token. Refreshes when near expiry.
+ * Returns decrypted secrets for server-side publish (never expose to clients).
+ */
+export async function ensureFreshConnectionSecrets(row, { forceRefresh = false } = {}) {
+  let current = row;
+  const nearExpiry = isTokenExpired(current.tokenExpiresAt);
+  if (forceRefresh || nearExpiry || current.reconnectRequired || current.status === "expired") {
+    current = await refreshConnectionTokens(current);
+  }
+
+  return {
+    row: current,
+    accessToken: current.accessTokenEnc ? decryptSecret(current.accessTokenEnc) : "",
+    pageAccessToken: current.pageAccessTokenEnc ? decryptSecret(current.pageAccessTokenEnc) : "",
+    refreshToken: current.refreshTokenEnc ? decryptSecret(current.refreshTokenEnc) : ""
+  };
 }
 
 export async function syncExpiryFlagsForUser(userId) {

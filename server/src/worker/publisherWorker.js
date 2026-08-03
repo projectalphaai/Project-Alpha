@@ -1,15 +1,29 @@
 import { prisma } from "../lib/prisma.js";
 import { logActivity } from "../lib/activity.js";
-import { publisherAdapter } from "../lib/publishers/mockPublisher.js";
+import { resolvePublisherAdapter, getPublisherAdapterInfo } from "../lib/publishers/index.js";
+import { friendlyPublishError } from "../lib/friendlyErrors.js";
 
 let timer = null;
 let ticking = false;
+
+function adapter() {
+  return resolvePublisherAdapter();
+}
 
 export function getPublisherWorkerConfig() {
   const enabled = String(process.env.ENABLE_PUBLISH_WORKER || "true").toLowerCase() !== "false";
   const intervalMs = Math.max(1000, Number(process.env.PUBLISH_WORKER_INTERVAL_MS || 5000));
   const batchSize = Math.max(1, Number(process.env.PUBLISH_WORKER_BATCH_SIZE || 10));
-  return { enabled, intervalMs, batchSize, adapter: publisherAdapter.name };
+  const info = getPublisherAdapterInfo();
+  return {
+    enabled,
+    intervalMs,
+    batchSize,
+    adapter: info.name || "unconfigured",
+    publishAdapterMode: process.env.PUBLISH_ADAPTER || "auto",
+    productionSafe: Boolean(info.productionSafe),
+    adapterError: info.error || null
+  };
 }
 
 /**
@@ -45,6 +59,12 @@ export async function claimDuePosts(limit = 10) {
   return claimed;
 }
 
+function backoffMs(attemptCount) {
+  // 30s, 2m, 8m (capped)
+  const base = 30_000 * Math.pow(4, Math.max(0, attemptCount - 1));
+  return Math.min(base, 30 * 60_000);
+}
+
 export async function processClaimedPost(post) {
   const attemptCount = (post.attemptCount || 0) + 1;
   await prisma.scheduledPost.update({
@@ -52,9 +72,10 @@ export async function processClaimedPost(post) {
     data: { attemptCount }
   });
 
+  const active = adapter();
   let result;
   try {
-    result = await publisherAdapter.publish(post);
+    result = await active.publish(post);
   } catch (err) {
     result = { ok: false, error: "Publisher adapter threw an unexpected error." };
     console.error("Publisher adapter error:", err?.name || "Error");
@@ -74,14 +95,52 @@ export async function processClaimedPost(post) {
       userId: post.userId,
       postId: post.id,
       type: "publish",
-      message: `Published ${post.platform} post via ${publisherAdapter.name} adapter`,
-      meta: { platform: post.platform, externalPostId: published.externalPostId, attemptCount }
+      message: `Published ${post.platform} post via ${active.name} adapter`,
+      meta: {
+        platform: post.platform,
+        externalPostId: published.externalPostId,
+        attemptCount,
+        adapter: active.name
+      }
     });
     return published;
   }
 
-  const errorMessage = String(result?.error || "Publishing failed.").slice(0, 500);
+  const errorMessage = String(
+    result?.error || friendlyPublishError("Publishing failed.").message
+  ).slice(0, 500);
   const maxAttempts = post.maxAttempts || 3;
+  const errorCode = result?.errorCode || friendlyPublishError(errorMessage, { platform: post.platform }).code;
+
+  if (attemptCount < maxAttempts) {
+    const retryAt = new Date(Date.now() + backoffMs(attemptCount));
+    const requeued = await prisma.scheduledPost.update({
+      where: { id: post.id },
+      data: {
+        status: "scheduled",
+        scheduledAt: retryAt,
+        errorMessage,
+        lastAttemptAt: new Date()
+      }
+    });
+    await logActivity({
+      userId: post.userId,
+      postId: post.id,
+      type: "retry_scheduled",
+      message: `Publish attempt ${attemptCount}/${maxAttempts} failed; retry at ${retryAt.toISOString()}`,
+      meta: {
+        platform: post.platform,
+        errorMessage,
+        errorCode,
+        attemptCount,
+        maxAttempts,
+        retryAt: retryAt.toISOString(),
+        adapter: active.name
+      }
+    });
+    return requeued;
+  }
+
   const failed = await prisma.scheduledPost.update({
     where: { id: post.id },
     data: {
@@ -95,7 +154,14 @@ export async function processClaimedPost(post) {
     postId: post.id,
     type: "fail",
     message: `Publish failed for ${post.platform} post (attempt ${attemptCount}/${maxAttempts})`,
-    meta: { platform: post.platform, errorMessage, attemptCount, maxAttempts }
+    meta: {
+      platform: post.platform,
+      errorMessage,
+      errorCode,
+      attemptCount,
+      maxAttempts,
+      adapter: active.name
+    }
   });
   return failed;
 }
@@ -117,8 +183,17 @@ export function startPublisherWorker() {
   }
   if (timer) return { stop: stopPublisherWorker };
 
+  if (!cfg.productionSafe && process.env.NODE_ENV === "production") {
+    console.error("Publish worker refused to start:", cfg.adapterError || "adapter not production-safe");
+    throw new Error(cfg.adapterError || "Publish adapter is not production-safe.");
+  }
+
+  if (cfg.adapterError && process.env.NODE_ENV !== "production") {
+    console.warn("Publish adapter warning:", cfg.adapterError);
+  }
+
   console.log(
-    `Publish worker started (adapter=${cfg.adapter}, interval=${cfg.intervalMs}ms, batch=${cfg.batchSize})`
+    `Publish worker started (adapter=${cfg.adapter}, mode=${cfg.publishAdapterMode}, interval=${cfg.intervalMs}ms, batch=${cfg.batchSize})`
   );
 
   const tick = async () => {
@@ -135,7 +210,6 @@ export function startPublisherWorker() {
 
   timer = setInterval(tick, cfg.intervalMs);
   if (typeof timer.unref === "function") timer.unref();
-  // Kick once shortly after boot so due posts don't wait a full interval.
   setTimeout(tick, 750).unref?.();
 
   return { stop: stopPublisherWorker };
