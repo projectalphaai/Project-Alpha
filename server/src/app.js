@@ -16,6 +16,7 @@ import activityRoutes from "./routes/activity.js";
 import leadsRoutes from "./routes/leads.js";
 import billingRoutes, { handleStripeWebhook } from "./routes/billing.js";
 import adminRoutes from "./routes/admin.js";
+import analyticsRoutes from "./routes/analytics.js";
 import { getPublisherWorkerConfig } from "./worker/publisherWorker.js";
 import { listProviders } from "./lib/oauth/registry.js";
 
@@ -114,6 +115,7 @@ export function createApp() {
   app.use("/api/leads", leadsRoutes);
   app.use("/api/billing", billingRoutes);
   app.use("/api/admin", adminRoutes);
+  app.use("/api/analytics", analyticsRoutes);
 
   app.use(express.static(rootDir, { extensions: ["html"] }));
 
