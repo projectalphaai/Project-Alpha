@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, follow">
+    <meta name="theme-color" content="#030712">
+    <title>Set up workspace — Project Alpha AI</title>
+    <link rel="icon" type="image/svg+xml" href="../img/favicon.svg">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body class="auth-body">
+    <div class="aurora-bg" aria-hidden="true">
+        <div class="aurora aurora-1"></div>
+        <div class="aurora aurora-2"></div>
+        <div class="aurora aurora-3"></div>
+    </div>
+
+    <main class="auth-main">
+        <div class="auth-card glass-panel">
+            <h1>Create your workspace</h1>
+            <p class="auth-lead">One step before you connect Instagram and start publishing.</p>
+
+            <form class="auth-form" id="onboarding-form" novalidate>
+                <label for="workspace-name">Workspace name</label>
+                <input type="text" id="workspace-name" name="workspaceName" required minlength="2" maxlength="80" placeholder="Acme Marketing" autocomplete="organization">
+                <span class="field-error" id="workspace-name-error" role="alert"></span>
+
+                <label for="workspace-timezone">Timezone</label>
+                <select id="workspace-timezone" name="timezone">
+                    <option value="UTC">UTC</option>
+                    <option value="America/New_York">Eastern (US)</option>
+                    <option value="America/Los_Angeles">Pacific (US)</option>
+                    <option value="Europe/London">London</option>
+                    <option value="Asia/Kolkata" selected>India (IST)</option>
+                </select>
+
+                <div class="auth-form-error" id="onboarding-form-error" hidden role="alert"></div>
+
+                <button type="submit" class="btn btn-glow" id="onboarding-submit">
+                    <span class="btn-label">Continue to dashboard</span>
+                    <span class="btn-spinner" hidden aria-hidden="true"></span>
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script src="../js/config.js" defer></script>
+    <script src="../js/api.js" defer></script>
+    <script src="../js/auth.js" defer></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        if (!window.AlphaAuth || !window.AlphaAPI) return;
+        const user = await AlphaAuth.getSession();
+        if (!user) {
+          window.location.replace("./login.html");
+          return;
+        }
+        if (user.onboardingComplete) {
+          window.location.replace("./dashboard.html");
+          return;
+        }
+        if (user.name) {
+          document.getElementById("workspace-name").value = `${user.name.split(" ")[0]}'s Workspace`;
+        }
+
+        const form = document.getElementById("onboarding-form");
+        const submit = document.getElementById("onboarding-submit");
+        const formError = document.getElementById("onboarding-form-error");
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          formError.hidden = true;
+          const workspaceName = document.getElementById("workspace-name").value.trim();
+          if (workspaceName.length < 2) {
+            document.getElementById("workspace-name-error").textContent = "Enter a workspace name.";
+            return;
+          }
+          document.getElementById("workspace-name-error").textContent = "";
+          submit.disabled = true;
+          submit.classList.add("is-loading");
+          const spinner = submit.querySelector(".btn-spinner");
+          if (spinner) spinner.hidden = false;
+          try {
+            const data = await AlphaAPI.api("/api/auth/onboarding", {
+              method: "POST",
+              body: {
+                workspaceName,
+                company: workspaceName,
+                timezone: document.getElementById("workspace-timezone").value
+              }
+            });
+            if (data.user) AlphaAuth.cacheUser?.(data.user);
+            window.location.href = "./dashboard.html";
+          } catch (err) {
+            formError.hidden = false;
+            formError.textContent = err.message || "Could not save workspace.";
+            submit.disabled = false;
+            submit.classList.remove("is-loading");
+            if (spinner) spinner.hidden = true;
+          }
+        });
+      });
+    </script>
+</body>
+</html>

@@ -60,7 +60,28 @@ export const config = {
     model: process.env.OPENAI_MODEL || "gpt-4o-mini"
   },
   cookieName: process.env.AUTH_COOKIE_NAME || "pa_session",
-  sessionTtlDays: Number(process.env.SESSION_TTL_DAYS || 14)
+  sessionTtlDays: Number(process.env.SESSION_TTL_DAYS || 14),
+  stripe: {
+    secretKey: optionalEnv("STRIPE_SECRET_KEY"),
+    webhookSecret: optionalEnv("STRIPE_WEBHOOK_SECRET"),
+    priceGenesis: optionalEnv("STRIPE_PRICE_GENESIS")
+  },
+  email: {
+    resendApiKey: optionalEnv("RESEND_API_KEY"),
+    from: optionalEnv("EMAIL_FROM", "Project Alpha <onboarding@resend.dev>")
+  },
+  billing: {
+    // Default: enforce in production only. Override with BILLING_ENFORCE=true|false.
+    enforce:
+      optionalEnv("BILLING_ENFORCE") === "true" ||
+      (optionalEnv("BILLING_ENFORCE") !== "false" && isProd),
+    founderEmails: new Set(
+      optionalEnv("FOUNDER_ADMIN_EMAILS")
+        .split(",")
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean)
+    )
+  }
 };
 
 export function assertRuntimeSecrets() {

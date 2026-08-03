@@ -7,8 +7,16 @@ const userSelect = {
   email: true,
   name: true,
   company: true,
+  workspaceName: true,
   timezone: true,
   role: true,
+  emailVerifiedAt: true,
+  onboardingComplete: true,
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
+  plan: true,
+  subscriptionStatus: true,
+  currentPeriodEnd: true,
   createdAt: true
 };
 

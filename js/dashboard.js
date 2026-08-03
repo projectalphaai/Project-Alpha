@@ -42,12 +42,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   initAITools();
   initLeadsCrm();
   initSettings();
+  initBilling();
   initKeyboardA11y();
   initOAuthQueryFeedback();
   disableFutureSprintMocks();
 
   await refreshAllData();
   startDashboardPolling();
+  handleBillingQueryFeedback();
 });
 
 function delay(ms) {
@@ -357,6 +359,32 @@ function renderFounderDashboard() {
   setStat("founder-scheduled", s.scheduledPosts ?? 0);
   setStat("founder-published", s.publishedPosts ?? 0);
   setStat("founder-failed", s.failedPosts ?? 0);
+  loadPlatformAdmin().catch(() => {});
+}
+
+async function loadPlatformAdmin() {
+  const panel = document.getElementById("platform-admin-panel");
+  const summary = document.getElementById("platform-admin-summary");
+  const list = document.getElementById("platform-admin-users");
+  if (!panel) return;
+  try {
+    const data = await AlphaAPI.api("/api/admin/overview");
+    panel.hidden = false;
+    const o = data.overview || {};
+    if (summary) {
+      summary.textContent = `${o.users || 0} users · ${o.paidSubscribers || 0} paid · ${o.pastDue || 0} past due · ${o.onboarded || 0} onboarded · ${o.publishedPosts || 0} published`;
+    }
+    if (list) {
+      list.innerHTML = "";
+      (data.recentUsers || []).slice(0, 10).forEach((u) => {
+        const li = document.createElement("li");
+        li.textContent = `${u.email} · ${u.subscriptionStatus || "none"} · ${u.workspaceName || "—"}`;
+        list.appendChild(li);
+      });
+    }
+  } catch {
+    panel.hidden = true;
+  }
 }
 
 function setStat(id, value) {
@@ -1542,6 +1570,16 @@ function initSettings() {
       form.querySelector("#settings-timezone").value = session.timezone;
     }
     updateProfileName(session.name);
+    updateEmailVerifyUI(session);
+  });
+
+  document.getElementById("resend-verify-btn")?.addEventListener("click", async () => {
+    try {
+      await AlphaAPI.api("/api/auth/resend-verification", { method: "POST" });
+      showToast("Verification email sent (check inbox or server logs in dev).");
+    } catch (err) {
+      showToast(err.message || "Could not resend verification.", "error");
+    }
   });
 
   form.addEventListener("submit", async (e) => {
@@ -1582,12 +1620,113 @@ function initSettings() {
     if (password) password.value = "";
     if (confirm) confirm.value = "";
     updateProfileName(result.user.name);
+    updateEmailVerifyUI(result.user);
     if (success) success.hidden = false;
     showToast("Settings saved");
     setTimeout(() => {
       if (success) success.hidden = true;
     }, 2500);
   });
+}
+
+function updateEmailVerifyUI(user) {
+  const status = document.getElementById("email-verify-status");
+  const btn = document.getElementById("resend-verify-btn");
+  if (!status) return;
+  if (user?.emailVerified) {
+    status.textContent = "Email verified.";
+    if (btn) btn.hidden = true;
+  } else {
+    status.textContent = "Email not verified yet. Check your inbox for the link.";
+    if (btn) btn.hidden = false;
+  }
+}
+
+function initBilling() {
+  const checkoutBtn = document.getElementById("billing-checkout-btn");
+  const portalBtn = document.getElementById("billing-portal-btn");
+  refreshBillingStatus().catch(() => {});
+
+  checkoutBtn?.addEventListener("click", async () => {
+    setButtonLoading(checkoutBtn, true);
+    try {
+      const data = await AlphaAPI.api("/api/billing/checkout-session", { method: "POST" });
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      showToast("Checkout URL missing.", "error");
+    } catch (err) {
+      const el = document.getElementById("billing-error");
+      if (el) {
+        el.hidden = false;
+        el.textContent = err.message || "Checkout failed.";
+      }
+      showToast(err.message || "Checkout failed.", "error");
+    } finally {
+      setButtonLoading(checkoutBtn, false);
+    }
+  });
+
+  portalBtn?.addEventListener("click", async () => {
+    try {
+      const data = await AlphaAPI.api("/api/billing/portal-session", { method: "POST" });
+      if (data.url) window.location.href = data.url;
+    } catch (err) {
+      showToast(err.message || "Could not open billing portal.", "error");
+    }
+  });
+}
+
+async function refreshBillingStatus() {
+  const statusEl = document.getElementById("billing-status-text");
+  const planEl = document.getElementById("billing-plan-text");
+  const portalBtn = document.getElementById("billing-portal-btn");
+  const checkoutBtn = document.getElementById("billing-checkout-btn");
+  try {
+    const data = await AlphaAPI.api("/api/billing/status");
+    const b = data.billing || {};
+    if (statusEl) {
+      if (!b.billingConfigured) {
+        statusEl.textContent =
+          "Stripe not configured yet (set STRIPE_SECRET_KEY + STRIPE_PRICE_GENESIS).";
+      } else if (b.hasPaidAccess && b.subscriptionStatus !== "none") {
+        statusEl.textContent = `Subscription: ${b.subscriptionStatus}`;
+      } else if (b.hasPaidAccess && !b.enforceBilling) {
+        statusEl.textContent = "Billing not enforced in this environment — subscribe when ready.";
+      } else {
+        statusEl.textContent = "No active subscription. Subscribe to generate and schedule.";
+      }
+    }
+    if (planEl) {
+      planEl.hidden = false;
+      planEl.textContent = `Plan: ${b.plan || "none"} · Paid access: ${b.hasPaidAccess ? "yes" : "no"}`;
+    }
+    if (portalBtn) portalBtn.hidden = !b.stripeCustomerId;
+    if (checkoutBtn && b.subscriptionStatus === "active") {
+      checkoutBtn.querySelector(".btn-label").textContent = "Resubscribe / upgrade";
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = err.message || "Could not load billing.";
+  }
+}
+
+function handleBillingQueryFeedback() {
+  const params = new URLSearchParams(window.location.search);
+  const billing = params.get("billing");
+  if (billing === "success") {
+    showToast("Payment received — subscription activating via webhook.");
+    navigateToSection("settings");
+    refreshBillingStatus().catch(() => {});
+  } else if (billing === "cancel") {
+    showToast("Checkout canceled.", "info");
+    navigateToSection("settings");
+  }
+  if (billing) {
+    params.delete("billing");
+    const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}${window.location.hash || "#settings"}`;
+    window.history.replaceState({}, "", next);
+  }
 }
 
 function disableFutureSprintMocks() {

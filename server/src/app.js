@@ -14,6 +14,8 @@ import postsRoutes from "./routes/posts.js";
 import aiRoutes from "./routes/ai.js";
 import activityRoutes from "./routes/activity.js";
 import leadsRoutes from "./routes/leads.js";
+import billingRoutes, { handleStripeWebhook } from "./routes/billing.js";
+import adminRoutes from "./routes/admin.js";
 import { getPublisherWorkerConfig } from "./worker/publisherWorker.js";
 import { listProviders } from "./lib/oauth/registry.js";
 
@@ -36,6 +38,14 @@ export function createApp() {
       credentials: true
     })
   );
+
+  // Stripe webhooks need the raw body — register before express.json()
+  app.post(
+    "/api/billing/webhook",
+    express.raw({ type: "application/json" }),
+    (req, res) => handleStripeWebhook(req, res)
+  );
+
   app.use(express.json({ limit: "1mb" }));
   app.use(cookieParser());
 
@@ -62,10 +72,16 @@ export function createApp() {
     res.json({
       ok: true,
       service: "project-alpha",
-      sprint: 8,
+      sprint: 9,
       env: config.nodeEnv,
       database: "postgresql",
       openaiConfigured: Boolean(config.openai.apiKey),
+      billing: {
+        configured: Boolean(config.stripe.secretKey && config.stripe.priceGenesis),
+        enforce: config.billing.enforce,
+        webhookConfigured: Boolean(config.stripe.webhookSecret)
+      },
+      emailConfigured: Boolean(config.email.resendApiKey),
       publishWorker: {
         enabled: worker.enabled,
         adapter: worker.adapter,
@@ -96,6 +112,8 @@ export function createApp() {
   app.use("/api/ai", aiRoutes);
   app.use("/api/activity", activityRoutes);
   app.use("/api/leads", leadsRoutes);
+  app.use("/api/billing", billingRoutes);
+  app.use("/api/admin", adminRoutes);
 
   app.use(express.static(rootDir, { extensions: ["html"] }));
 

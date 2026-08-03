@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requirePaidAccess } from "../lib/entitlements.js";
 import { logActivity, serializeActivity } from "../lib/activity.js";
 
 const router = Router();
@@ -248,6 +249,15 @@ router.post("/", requireAuth, async (req, res, next) => {
     if (saveAs === "draft") {
       if (!scheduledAt) scheduledAt = defaultDraftSchedule();
     } else {
+      try {
+        requirePaidAccess(req.user);
+      } catch (err) {
+        return res.status(err.status || 402).json({
+          ok: false,
+          error: err.message,
+          code: err.code || "PAYMENT_REQUIRED"
+        });
+      }
       if (!scheduledAt || scheduledAt <= new Date()) {
         return res.status(400).json({ ok: false, error: "Choose a future date and time." });
       }
@@ -317,6 +327,15 @@ router.put("/:id", requireAuth, async (req, res, next) => {
     let scheduledAt = parseScheduleDate(parsed.data.scheduledAt) || existing.scheduledAt;
 
     if (saveAs === "scheduled") {
+      try {
+        requirePaidAccess(req.user);
+      } catch (err) {
+        return res.status(err.status || 402).json({
+          ok: false,
+          error: err.message,
+          code: err.code || "PAYMENT_REQUIRED"
+        });
+      }
       if (!scheduledAt || scheduledAt <= new Date()) {
         return res.status(400).json({ ok: false, error: "Choose a future date and time." });
       }
@@ -393,6 +412,16 @@ router.post("/:id/cancel", requireAuth, async (req, res, next) => {
 
 router.post("/:id/retry", requireAuth, async (req, res, next) => {
   try {
+    try {
+      requirePaidAccess(req.user);
+    } catch (err) {
+      return res.status(err.status || 402).json({
+        ok: false,
+        error: err.message,
+        code: err.code || "PAYMENT_REQUIRED"
+      });
+    }
+
     const existing = await prisma.scheduledPost.findFirst({
       where: { id: req.params.id, userId: req.user.id }
     });

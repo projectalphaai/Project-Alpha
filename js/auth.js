@@ -3,6 +3,15 @@
 (function (global) {
   let cachedUser = null;
 
+  function cacheUser(user) {
+    cachedUser = user || null;
+  }
+
+  function postAuthPath(user) {
+    if (user && !user.onboardingComplete) return "./onboarding.html";
+    return "./dashboard.html";
+  }
+
   async function getSession() {
     try {
       const data = await AlphaAPI.api("/api/auth/me");
@@ -72,13 +81,18 @@
       window.location.replace(loginPath || "./login.html");
       return false;
     }
+    const path = window.location.pathname || "";
+    if (!user.onboardingComplete && !path.includes("onboarding.html")) {
+      window.location.replace("./onboarding.html");
+      return false;
+    }
     return true;
   }
 
   async function redirectIfAuthed(dashboardPath) {
     const user = await getSession();
     if (user) {
-      window.location.replace(dashboardPath || "./dashboard.html");
+      window.location.replace(dashboardPath || postAuthPath(user));
       return true;
     }
     return false;
@@ -92,6 +106,8 @@
     logout,
     updateAccount,
     requireAuth,
-    redirectIfAuthed
+    redirectIfAuthed,
+    cacheUser,
+    postAuthPath
   };
 })(window);

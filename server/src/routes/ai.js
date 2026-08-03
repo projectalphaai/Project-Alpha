@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
+import { requireEntitlement } from "../middleware/entitlement.js";
 import { generateSocialContent } from "../lib/openai.js";
 
 const router = Router();
@@ -69,7 +70,7 @@ function safeAiError(err, res) {
   return res.status(status).json({ ok: false, error: message });
 }
 
-router.post("/generate-content", requireAuth, aiLimiter, async (req, res) => {
+router.post("/generate-content", requireAuth, requireEntitlement, aiLimiter, async (req, res) => {
   try {
     const parsed = generateSchema.safeParse(req.body);
     if (!parsed.success) {

@@ -1,6 +1,7 @@
-# Production Readiness Checklist — Project Alpha (Sprint 8)
+# Production Readiness Checklist — Project Alpha (Sprint 9)
 
 Use this before accepting a paying customer on production.
+Also see `DEPLOYMENT.md`, `MONITORING.md`, and `FIRST_INVOICE.md`.
 
 ## Infrastructure
 - [ ] `NODE_ENV=production`
@@ -12,6 +13,10 @@ Use this before accepting a paying customer on production.
 - [ ] `PUBLISH_ADAPTER=auto` or `meta-live` (mock blocked in production)
 - [ ] `ALLOW_MOCK_PUBLISH` is **false**
 - [ ] Single publish worker process (do not run API + `npm run worker` both claiming)
+- [ ] `STRIPE_SECRET_KEY`, `STRIPE_PRICE_GENESIS`, `STRIPE_WEBHOOK_SECRET`
+- [ ] `BILLING_ENFORCE=true`
+- [ ] `RESEND_API_KEY` + `EMAIL_FROM`
+- [ ] `FOUNDER_ADMIN_EMAILS` set
 
 ## Product path
 - [ ] Instagram Professional account linked to a Facebook Page (test account)
@@ -22,23 +27,25 @@ Use this before accepting a paying customer on production.
 - [ ] Schedule Facebook text post → published on Page
 - [ ] Failed post shows user-friendly error + Retry works
 - [ ] Publish History shows success/failure
+- [ ] Signup → onboarding → Stripe Checkout → webhook sets `subscriptionStatus=active`
+- [ ] Paid user: generate → schedule → publish
 
 ## Security
-- [ ] Password reset / email verify (recommended before paid scale)
+- [x] Password reset / email verify (Sprint 9)
 - [ ] CSP enabled or scheduled
 - [ ] Privacy Policy + Terms live
 - [ ] No secrets in git; `.env` gitignored
 
 ## Ops
-- [ ] `/api/health` reports `sprint: 8`, `productionSafe: true`, adapter `meta-live`
+- [ ] `/api/health` reports `sprint: 9`, `billing.configured: true`, `productionSafe: true`
 - [ ] `/api/ready` green
-- [ ] Error monitoring (Sentry or equivalent)
+- [ ] Error monitoring (Sentry or equivalent) — optional for invoice #1
 - [ ] Uptime check on `/api/ready`
 - [ ] Runbook: OAuth outage, token expiry, Meta rate limits
 
 ## Billing (gate for “paying”)
-- [ ] Stripe products/prices created
-- [ ] Checkout + webhook entitlement (if shipping paid this week)
-- [ ] Or: founder invoice / manual payment recorded with access granted
+- [ ] Stripe products/prices created (live)
+- [ ] Checkout + webhook entitlement verified
+- [ ] First paid invoice visible in Stripe Dashboard
 
-**Go / No-Go:** Do not onboard a paying customer if mock publish can run in production or live IG/FB publish has not been proven on a real account.
+**Go / No-Go:** Do not onboard a paying customer if mock publish can run in production, live IG/FB publish has not been proven, or Stripe webhook has not activated a test subscription.

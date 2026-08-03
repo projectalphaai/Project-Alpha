@@ -6,11 +6,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   initPasswordToggles();
 
   if (document.getElementById("login-form")) {
-    await AlphaAuth.redirectIfAuthed("./dashboard.html");
+    await AlphaAuth.redirectIfAuthed();
     initLogin();
   }
   if (document.getElementById("signup-form")) {
-    await AlphaAuth.redirectIfAuthed("./dashboard.html");
+    await AlphaAuth.redirectIfAuthed();
     initSignup();
   }
 });
@@ -84,7 +84,7 @@ function initLogin() {
       return;
     }
 
-    window.location.href = "./dashboard.html";
+    window.location.href = AlphaAuth.postAuthPath(result.user);
   });
 
   [email, password].forEach((el) => {
@@ -157,7 +157,7 @@ function initSignup() {
       return;
     }
 
-    window.location.href = "./dashboard.html";
+    window.location.href = AlphaAuth.postAuthPath(result.user);
   });
 
   [name, email, password, confirm].forEach((el) => {

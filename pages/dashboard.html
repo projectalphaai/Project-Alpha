@@ -201,6 +201,11 @@
                         <div class="stat-card"><h3>Published</h3><p class="stat-value" id="founder-published">0</p></div>
                         <div class="stat-card"><h3>Failed</h3><p class="stat-value" id="founder-failed">0</p></div>
                     </div>
+                    <div id="platform-admin-panel" hidden style="margin-top:16px">
+                        <h4 style="margin:0 0 8px">Platform (founder admin)</h4>
+                        <p class="panel-meta" id="platform-admin-summary">—</p>
+                        <ul class="activity-list" id="platform-admin-users" style="margin-top:8px"></ul>
+                    </div>
                     <p class="panel-meta" id="connection-health-summary" style="margin-top:12px">Health: not checked yet.</p>
                     <ul class="activity-list" id="connection-health-list" style="margin-top:10px" hidden></ul>
                 </div>
@@ -919,6 +924,30 @@
                             <input type="checkbox" id="ai-suggestions" name="aiSuggestions" checked>
                             Show AI content suggestions
                         </label>
+                    </fieldset>
+
+                    <fieldset class="settings-fieldset">
+                        <legend>Billing</legend>
+                        <p class="panel-meta" id="billing-status-text">Loading billing status…</p>
+                        <p class="panel-meta" id="billing-plan-text" hidden></p>
+                        <div class="settings-billing-actions" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+                            <button type="button" class="btn btn-glow btn-sm" id="billing-checkout-btn">
+                                <span class="btn-label">Subscribe — Genesis</span>
+                                <span class="btn-spinner" hidden aria-hidden="true"></span>
+                            </button>
+                            <button type="button" class="btn btn-outline-glow btn-sm" id="billing-portal-btn" hidden>
+                                Manage billing
+                            </button>
+                        </div>
+                        <p class="field-error" id="billing-error" hidden role="alert"></p>
+                    </fieldset>
+
+                    <fieldset class="settings-fieldset">
+                        <legend>Email verification</legend>
+                        <p class="panel-meta" id="email-verify-status">Checking…</p>
+                        <button type="button" class="btn btn-outline-glow btn-sm" id="resend-verify-btn" hidden>
+                            Resend verification email
+                        </button>
                     </fieldset>
 
                     <button type="submit" class="btn btn-glow" id="settings-submit">

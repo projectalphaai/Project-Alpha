@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, follow">
+    <title>Verify email — Project Alpha AI</title>
+    <link rel="icon" type="image/svg+xml" href="../img/favicon.svg">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/auth.css">
+</head>
+<body class="auth-body">
+    <div class="aurora-bg" aria-hidden="true">
+        <div class="aurora aurora-1"></div>
+        <div class="aurora aurora-2"></div>
+    </div>
+    <main class="auth-main">
+        <div class="auth-card glass-panel">
+            <h1>Email verification</h1>
+            <p class="auth-lead" id="verify-message">Confirming your email…</p>
+            <p class="auth-switch"><a href="./dashboard.html">Go to dashboard</a> · <a href="./login.html">Log in</a></p>
+        </div>
+    </main>
+    <script src="../js/config.js" defer></script>
+    <script src="../js/api.js" defer></script>
+    <script src="../js/auth.js" defer></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const msg = document.getElementById("verify-message");
+        const token = new URLSearchParams(window.location.search).get("token");
+        if (!token) {
+          msg.textContent = "Missing verification token. Request a new link from Settings.";
+          return;
+        }
+        try {
+          const data = await AlphaAPI.api("/api/auth/verify-email", {
+            method: "POST",
+            body: { token }
+          });
+          if (data.user) AlphaAuth.cacheUser?.(data.user);
+          msg.textContent = "Email verified. Redirecting…";
+          const next = data.user?.onboardingComplete ? "./dashboard.html" : "./onboarding.html";
+          setTimeout(() => { window.location.href = next; }, 1200);
+        } catch (err) {
+          msg.textContent = err.message || "Verification failed. The link may have expired.";
+        }
+      });
+    </script>
+</body>
+</html>
