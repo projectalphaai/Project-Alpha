@@ -2,18 +2,19 @@ import { publisherAdapter as mockAdapter } from "./mockPublisher.js";
 import { metaLivePublisherAdapter } from "./metaLivePublisher.js";
 
 const isProd = String(process.env.NODE_ENV || "").toLowerCase() === "production";
+const META_PLATFORMS = new Set(["instagram", "facebook"]);
 
 function metaConfigured() {
   return Boolean((process.env.META_APP_ID || "").trim() && (process.env.META_APP_SECRET || "").trim());
 }
 
 /**
- * Resolve the active publisher adapter.
+ * Resolve the base publisher adapter.
  * PUBLISH_ADAPTER=mock|meta-live|auto
  *
  * Production rules (Sprint 8):
- * - mock is forbidden unless ALLOW_MOCK_PUBLISH=true (emergency only)
- * - auto requires Meta credentials; otherwise throws at resolve time
+ * - mock is forbidden unless ALLOW_MOCK_PUBLISH=true
+ * - Instagram/Facebook never use mock when Meta credentials exist
  */
 export function resolvePublisherAdapter() {
   const mode = String(process.env.PUBLISH_ADAPTER || "auto").toLowerCase();
@@ -50,6 +51,47 @@ export function resolvePublisherAdapter() {
   return mockAdapter;
 }
 
+/**
+ * Hybrid publish: IG/FB always go through meta-live when Meta is configured.
+ * Other platforms are rejected in production (lean beta — no fake success).
+ */
+export async function publishScheduledPost(post) {
+  const platform = String(post.platform || "").toLowerCase();
+
+  if (META_PLATFORMS.has(platform)) {
+    if (!metaConfigured()) {
+      if (isProd && String(process.env.ALLOW_MOCK_PUBLISH || "").toLowerCase() !== "true") {
+        return {
+          ok: false,
+          error: "Instagram/Facebook publishing is not configured. Contact support.",
+          errorCode: "NOT_CONFIGURED"
+        };
+      }
+      // Local/dev only: allow mock for Meta platforms when credentials missing
+      return mockAdapter.publish(post);
+    }
+    return metaLivePublisherAdapter.publish(post);
+  }
+
+  if (isProd) {
+    return {
+      ok: false,
+      error: `${platform} publishing is not available in beta. Use Instagram or Facebook.`,
+      errorCode: "PLATFORM_UNSUPPORTED"
+    };
+  }
+
+  const active = resolvePublisherAdapter();
+  if (active.name === "meta-live") {
+    return {
+      ok: false,
+      error: `${platform} is not supported by the live Meta adapter. Use Instagram or Facebook.`,
+      errorCode: "PLATFORM_UNSUPPORTED"
+    };
+  }
+  return active.publish(post);
+}
+
 export function getPublisherAdapterInfo() {
   try {
     const adapter = resolvePublisherAdapter();
@@ -58,7 +100,8 @@ export function getPublisherAdapterInfo() {
       name: adapter.name,
       mode: process.env.PUBLISH_ADAPTER || "auto",
       mockAllowedInProduction: String(process.env.ALLOW_MOCK_PUBLISH || "").toLowerCase() === "true",
-      productionSafe: adapter.name !== "mock" || !isProd
+      productionSafe: adapter.name !== "mock" || !isProd,
+      metaConfigured: metaConfigured()
     };
   } catch (err) {
     return {
@@ -66,7 +109,8 @@ export function getPublisherAdapterInfo() {
       name: null,
       mode: process.env.PUBLISH_ADAPTER || "auto",
       error: err.message,
-      productionSafe: false
+      productionSafe: false,
+      metaConfigured: metaConfigured()
     };
   }
 }
@@ -75,7 +119,6 @@ let cached;
 try {
   cached = resolvePublisherAdapter();
 } catch {
-  // Dev/boot may resolve later; worker start will re-resolve and surface errors.
   cached = mockAdapter;
 }
 
@@ -88,7 +131,6 @@ export const publisherAdapter = {
     }
   },
   async publish(post) {
-    const active = resolvePublisherAdapter();
-    return active.publish(post);
+    return publishScheduledPost(post);
   }
 };

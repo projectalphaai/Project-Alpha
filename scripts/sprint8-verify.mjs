@@ -125,13 +125,38 @@ async function api(pathName, opts = {}) {
   log(
     "Founder Dashboard UI",
     html.includes("founder-dashboard") &&
-      html.includes("stat-active-connections") &&
+      html.includes("founder-connected") &&
+      html.includes("founder-active") &&
       js.includes("renderFounderDashboard") &&
-      js.includes("/api/connections/health")
+      js.includes("/api/connections/health") &&
+      js.includes("connection-health-list")
   );
   log(
     "Publish history UI",
     html.includes("scheduler-history-view") && js.includes("renderPublishHistory")
+  );
+  log(
+    "Schedule UI includes Instagram mediaUrl",
+    html.includes("post-media-url") &&
+      js.includes("mediaUrl") &&
+      js.includes("MEDIA_REQUIRED") === false &&
+      js.includes('platform?.value === "instagram"')
+  );
+  const scheduleModal = html.includes('id="schedule-modal"')
+    ? html.slice(html.indexOf('id="schedule-modal"'), html.indexOf('id="schedule-modal"') + 2500)
+    : "";
+  log(
+    "Beta platforms limited to IG/FB in schedule modal",
+    scheduleModal.includes('value="instagram"') &&
+      scheduleModal.includes('value="facebook"') &&
+      !scheduleModal.includes('value="linkedin"') &&
+      !scheduleModal.includes('value="youtube"')
+  );
+  log(
+    "Hybrid publishScheduledPost (no mock Meta when configured)",
+    fs.readFileSync(path.join(root, "server/src/lib/publishers/index.js"), "utf8").includes(
+      "publishScheduledPost"
+    )
   );
   log(
     "Checklists present",

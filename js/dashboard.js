@@ -522,12 +522,34 @@ function initSchedulerViews() {
 
   document.getElementById("run-connection-health")?.addEventListener("click", async () => {
     const summary = document.getElementById("connection-health-summary");
+    const list = document.getElementById("connection-health-list");
     try {
       if (summary) summary.textContent = "Running live health checks…";
+      if (list) {
+        list.hidden = false;
+        list.innerHTML = "";
+      }
       const data = await AlphaAPI.api("/api/connections/health");
       const s = data.summary || {};
       if (summary) {
         summary.textContent = `Health: ${s.healthy || 0} healthy · ${s.unhealthy || 0} unhealthy · ${s.total || 0} total`;
+      }
+      if (list) {
+        const rows = data.connections || [];
+        if (!rows.length) {
+          list.innerHTML = `<li class="activity-item"><div class="activity-body"><p>No connected accounts yet.</p></div></li>`;
+        } else {
+          list.innerHTML = rows
+            .map((c) => {
+              const health = c.health || {};
+              const ok = health.healthy !== false;
+              const label = PLATFORM_LABELS[c.platform] || c.platform;
+              const name = escapeHtml(c.accountName || c.accountUsername || c.accountId || "Account");
+              const msg = escapeHtml(health.message || (ok ? "OK" : "Needs attention"));
+              return `<li class="activity-item"><div class="activity-body"><p><strong>${label}</strong> · ${name}</p><span class="activity-meta">${ok ? "Healthy" : "Unhealthy"} — ${msg}</span></div></li>`;
+            })
+            .join("");
+        }
       }
       showToast("Connection health checks complete");
       await refreshAllData();
@@ -858,10 +880,11 @@ function openScheduleModal(post = null) {
   const content = document.getElementById("post-content");
   const platform = document.getElementById("post-platform");
   const datetime = document.getElementById("post-datetime");
+  const mediaUrl = document.getElementById("post-media-url");
   const count = document.getElementById("content-count");
   const success = document.getElementById("schedule-success");
   if (success) success.hidden = true;
-  ["content-error", "platform-error", "datetime-error"].forEach(hideError);
+  ["content-error", "platform-error", "datetime-error", "media-error"].forEach(hideError);
 
   const minDate = new Date();
   minDate.setMinutes(minDate.getMinutes() - minDate.getTimezoneOffset());
@@ -873,13 +896,28 @@ function openScheduleModal(post = null) {
     if (content) content.value = post.caption || post.content || "";
     if (platform) platform.value = post.platform || "";
     if (datetime) datetime.value = post.datetime || toLocalInput(post.scheduledAt);
+    if (mediaUrl) mediaUrl.value = post.mediaUrl || "";
   } else {
     if (title) title.textContent = "Create scheduled post";
     form?.reset();
     if (idInput) idInput.value = "";
   }
   if (count) count.textContent = String((content?.value || "").length);
+  updateMediaFieldHint();
   openModal("schedule-modal");
+}
+
+function updateMediaFieldHint() {
+  const platform = document.getElementById("post-platform")?.value;
+  const req = document.getElementById("post-media-required");
+  const hint = document.getElementById("post-media-hint");
+  if (req) req.hidden = platform !== "instagram";
+  if (hint) {
+    hint.textContent =
+      platform === "instagram"
+        ? "Required for Instagram — must be a publicly reachable image URL."
+        : "Optional for Facebook (used as a link attachment).";
+  }
 }
 
 function toLocalInput(value) {
@@ -899,6 +937,7 @@ function initScheduleForm() {
   const content = document.getElementById("post-content");
   const platform = document.getElementById("post-platform");
   const datetime = document.getElementById("post-datetime");
+  const mediaUrl = document.getElementById("post-media-url");
   const count = document.getElementById("content-count");
   const submit = document.getElementById("schedule-submit");
   const draftBtn = document.getElementById("schedule-save-draft");
@@ -911,9 +950,24 @@ function initScheduleForm() {
     content.classList.remove("invalid");
   });
 
-  const validateBase = ({ requireFutureTime }) => {
-    ["content-error", "platform-error", "datetime-error"].forEach(hideError);
-    [content, platform, datetime].forEach((el) => el?.classList.remove("invalid"));
+  platform?.addEventListener("change", () => {
+    updateMediaFieldHint();
+    hideError("media-error");
+    mediaUrl?.classList.remove("invalid");
+  });
+
+  const isPublicHttpUrl = (value) => {
+    try {
+      const u = new URL(String(value || ""));
+      return u.protocol === "http:" || u.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+
+  const validateBase = ({ requireFutureTime, status }) => {
+    ["content-error", "platform-error", "datetime-error", "media-error"].forEach(hideError);
+    [content, platform, datetime, mediaUrl].forEach((el) => el?.classList.remove("invalid"));
     let valid = true;
     const contentVal = (content?.value || "").trim();
     if (contentVal.length < 10) {
@@ -933,13 +987,18 @@ function initScheduleForm() {
         valid = false;
       }
     }
+    if (status === "scheduled" && platform?.value === "instagram" && !isPublicHttpUrl(mediaUrl?.value)) {
+      showError("media-error");
+      mediaUrl?.classList.add("invalid");
+      valid = false;
+    }
     return valid;
   };
 
   const savePost = async ({ status, button }) => {
     if (success) success.hidden = true;
     const requireFutureTime = status === "scheduled";
-    if (!validateBase({ requireFutureTime })) {
+    if (!validateBase({ requireFutureTime, status })) {
       showToast("Please fix the highlighted fields.", "error");
       return;
     }
@@ -947,6 +1006,7 @@ function initScheduleForm() {
     const payload = {
       platform: platform.value,
       caption: (content?.value || "").trim(),
+      mediaUrl: (mediaUrl?.value || "").trim(),
       status
     };
     if (datetime?.value) payload.scheduledAt = localInputToIso(datetime.value);
@@ -973,6 +1033,7 @@ function initScheduleForm() {
         if (idInput) idInput.value = "";
         if (count) count.textContent = "0";
         if (success) success.hidden = true;
+        updateMediaFieldHint();
       }, 500);
     } catch (err) {
       showToast(err.message || "Could not save post.", "error");

@@ -202,6 +202,7 @@
                         <div class="stat-card"><h3>Failed</h3><p class="stat-value" id="founder-failed">0</p></div>
                     </div>
                     <p class="panel-meta" id="connection-health-summary" style="margin-top:12px">Health: not checked yet.</p>
+                    <ul class="activity-list" id="connection-health-list" style="margin-top:10px" hidden></ul>
                 </div>
 
                 <div class="overview-grid">
@@ -978,10 +979,8 @@
                         <option value="">Select Platform</option>
                         <option value="instagram">Instagram</option>
                         <option value="facebook">Facebook</option>
-                        <option value="linkedin">LinkedIn</option>
-                        <option value="x">X</option>
-                        <option value="youtube">YouTube</option>
                     </select>
+                    <span class="field-hint">Beta launch supports Instagram and Facebook publishing only.</span>
                     <span class="field-error" id="platform-error" hidden>Please select a platform.</span>
                 </div>
                 <div class="form-field">
@@ -989,6 +988,12 @@
                     <textarea id="post-content" name="content" placeholder="Write your post caption..." maxlength="2200" required></textarea>
                     <span class="field-hint"><span id="content-count">0</span>/2200</span>
                     <span class="field-error" id="content-error" hidden>Please enter a caption (at least 10 characters).</span>
+                </div>
+                <div class="form-field" id="post-media-field">
+                    <label for="post-media-url">Image URL <span class="required" id="post-media-required" hidden>*</span></label>
+                    <input type="url" id="post-media-url" name="mediaUrl" maxlength="500" placeholder="https://… (public image Meta can download)">
+                    <span class="field-hint" id="post-media-hint">Required for Instagram. Optional link for Facebook posts.</span>
+                    <span class="field-error" id="media-error" hidden>Instagram requires a public http(s) image URL.</span>
                 </div>
                 <div class="form-field">
                     <label for="post-datetime">Date &amp; time <span class="required">*</span></label>
