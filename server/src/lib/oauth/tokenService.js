@@ -2,6 +2,7 @@ import { prisma } from "../prisma.js";
 import { decryptSecret, encryptSecret } from "../crypto.js";
 import { logActivity } from "../activity.js";
 import { getProvider } from "./registry.js";
+import { isMockConnectionRow } from "./mock.js";
 
 const EXPIRY_SKEW_MS = 2 * 60 * 1000;
 
@@ -121,6 +122,29 @@ function PLATFORM_FALLBACK(platform) {
   return platform.charAt(0).toUpperCase() + platform.slice(1);
 }
 
+/** Simulated refresh for demo/mock connections — no real provider call. */
+async function refreshMockConnection(row) {
+  const updated = await prisma.connectedAccount.update({
+    where: { id: row.id },
+    data: {
+      tokenExpiresAt: new Date(Date.now() + 55 * 24 * 60 * 60 * 1000),
+      status: "active",
+      reconnectRequired: false,
+      lastRefreshedAt: new Date(),
+      lastValidatedAt: new Date()
+    }
+  });
+
+  await logActivity({
+    userId: row.userId,
+    type: "oauth_refresh",
+    message: `Refreshed ${row.platform} token for ${row.accountName || row.accountId} (mock)`,
+    meta: { platform: row.platform, accountId: row.accountId, mock: true }
+  });
+
+  return updated;
+}
+
 export async function markConnectionExpired(row, reason = "Token expired") {
   const updated = await prisma.connectedAccount.update({
     where: { id: row.id },
@@ -145,6 +169,11 @@ export async function refreshConnectionTokens(row) {
     err.status = 400;
     throw err;
   }
+
+  if (isMockConnectionRow(row)) {
+    return refreshMockConnection(row);
+  }
+
   if (!provider.isConfigured()) {
     const err = new Error(
       `${row.platform} OAuth credentials are not configured. Set the provider env vars to refresh tokens.`

@@ -19,6 +19,7 @@ import adminRoutes from "./routes/admin.js";
 import analyticsRoutes from "./routes/analytics.js";
 import { getPublisherWorkerConfig } from "./worker/publisherWorker.js";
 import { listProviders } from "./lib/oauth/registry.js";
+import { isMockConnectAllowed } from "./lib/oauth/mock.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "../..");
@@ -92,7 +93,11 @@ export function createApp() {
         adapterError: worker.adapterError
       },
       oauth: oauthProviderStatus(),
-      oauthProviders: listProviders()
+      oauthProviders: listProviders(),
+      oauthMockConnect: {
+        instagram: isMockConnectAllowed("instagram"),
+        facebook: isMockConnectAllowed("facebook")
+      }
     });
   });
 

@@ -13,6 +13,7 @@ import { getProvider } from "../lib/oauth/registry.js";
 import { decryptSecret } from "../lib/crypto.js";
 import { logActivity } from "../lib/activity.js";
 import { friendlyConnectionError } from "../lib/friendlyErrors.js";
+import { isMockConnectionRow } from "../lib/oauth/mock.js";
 
 const router = Router();
 
@@ -171,6 +172,24 @@ router.post("/:id/validate", requireAuth, requireRole("member"), async (req, res
     });
     if (!row) {
       return res.status(404).json({ ok: false, error: "Connection not found." });
+    }
+
+    if (isMockConnectionRow(row)) {
+      const updated = await prisma.connectedAccount.update({
+        where: { id: row.id },
+        data: { lastValidatedAt: new Date(), status: "active", reconnectRequired: false }
+      });
+      await logActivity({
+        userId: req.user.id,
+        type: "oauth_validate",
+        message: `Validated ${row.platform} connection ${row.accountName || row.accountId} (mock)`,
+        meta: { platform: row.platform, accountId: row.accountId, connectionId: row.id, mock: true }
+      });
+      return res.json({
+        ok: true,
+        validation: { ok: true, mock: true, message: "Demo connection — no live Graph API call made." },
+        connection: serializeConnection(updated, { includeSecrets: true })
+      });
     }
 
     const provider = getProvider(row.platform);

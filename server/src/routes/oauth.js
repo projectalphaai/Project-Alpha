@@ -9,6 +9,7 @@ import { isOAuthPlatform, PLATFORM_LABELS } from "../lib/oauth/platforms.js";
 import { upsertConnectedAccounts } from "../lib/oauth/tokenService.js";
 import { logActivity } from "../lib/activity.js";
 import { createPkcePair } from "../lib/oauth/providers/x.js";
+import { createMockAccounts, isMockConnectAllowed } from "../lib/oauth/mock.js";
 
 const router = Router();
 
@@ -36,7 +37,11 @@ async function startOAuth(req, res, next) {
     if (!provider) {
       return res.status(400).json({ ok: false, error: "OAuth provider not registered." });
     }
-    if (!provider.isConfigured()) {
+
+    const configured = provider.isConfigured();
+    const useMock = !configured && isMockConnectAllowed(platform);
+
+    if (!configured && !useMock) {
       return res.status(503).json({
         ok: false,
         error: `${PLATFORM_LABELS[platform]} OAuth credentials are not configured on the server. Add the provider env vars, then retry.`,
@@ -51,7 +56,7 @@ async function startOAuth(req, res, next) {
     let codeVerifier = "";
     let codeChallenge = "";
 
-    if (provider.usesPkce) {
+    if (!useMock && provider.usesPkce) {
       const pkce = (provider.createPkcePair || createPkcePair)();
       codeVerifier = pkce.verifier;
       codeChallenge = pkce.challenge;
@@ -66,7 +71,8 @@ async function startOAuth(req, res, next) {
         codeVerifier,
         metaJson: JSON.stringify({
           accountId: req.body?.accountId || null,
-          connectionId: req.body?.connectionId || null
+          connectionId: req.body?.connectionId || null,
+          mock: useMock
         }),
         expiresAt
       }
@@ -74,13 +80,19 @@ async function startOAuth(req, res, next) {
 
     await logActivity({
       userId: req.user.id,
-      type: "oauth_start",
-      message: `Started ${platform} OAuth (${mode})`,
-      meta: { platform, mode }
+      type: useMock ? "oauth_start_mock" : "oauth_start",
+      message: `Started ${platform} OAuth (${mode})${useMock ? " [mock — Meta credentials not configured]" : ""}`,
+      meta: { platform, mode, mock: useMock }
     });
 
-    const url = provider.getAuthorizeUrl({ state, codeChallenge });
-    return res.json({ ok: true, url, platform, mode, configured: true });
+    const url = useMock
+      ? new URL(
+          `/api/oauth/${platform}/callback?state=${encodeURIComponent(state)}&code=mock`,
+          config.appUrl
+        ).toString()
+      : provider.getAuthorizeUrl({ state, codeChallenge });
+
+    return res.json({ ok: true, url, platform, mode, configured, mock: useMock });
   } catch (err) {
     next(err);
   }
@@ -125,7 +137,7 @@ async function handleCallback(req, res) {
 
     const platform = oauthState.platform;
     const provider = getProvider(platform);
-    if (!provider || !provider.isConfigured()) {
+    if (!provider) {
       return res.redirect(
         frontendRedirect({
           oauth: "error",
@@ -135,17 +147,31 @@ async function handleCallback(req, res) {
       );
     }
 
-    const accountsRaw = await provider.exchangeCode({
-      code: String(code),
-      codeVerifier: oauthState.codeVerifier || ""
-    });
-
     let reconnectMeta = {};
     try {
       reconnectMeta = JSON.parse(oauthState.metaJson || "{}");
     } catch {
       reconnectMeta = {};
     }
+
+    const useMock = Boolean(reconnectMeta.mock) && isMockConnectAllowed(platform);
+
+    if (!useMock && !provider.isConfigured()) {
+      return res.redirect(
+        frontendRedirect({
+          oauth: "error",
+          platform,
+          message: "OAuth provider is not configured."
+        })
+      );
+    }
+
+    const accountsRaw = useMock
+      ? createMockAccounts(platform, { accountId: reconnectMeta.accountId || null })
+      : await provider.exchangeCode({
+          code: String(code),
+          codeVerifier: oauthState.codeVerifier || ""
+        });
 
     let accounts = accountsRaw;
     if (oauthState.mode === "reconnect" && reconnectMeta.accountId) {
@@ -181,7 +207,9 @@ async function handleCallback(req, res) {
       frontendRedirect({
         oauth: "success",
         platform,
-        message: `Connected ${accounts.length} ${PLATFORM_LABELS[platform] || platform} account(s).`
+        message: useMock
+          ? `Connected ${accounts.length} ${PLATFORM_LABELS[platform] || platform} account(s) in demo mode (Meta credentials not configured on this server).`
+          : `Connected ${accounts.length} ${PLATFORM_LABELS[platform] || platform} account(s).`
       })
     );
   } catch (err) {
