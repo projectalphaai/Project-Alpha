@@ -5,8 +5,14 @@ const PLATFORM_LABELS = {
   facebook: "Facebook",
   linkedin: "LinkedIn",
   x: "X",
-  youtube: "YouTube"
+  youtube: "YouTube",
+  tiktok: "TikTok",
+  pinterest: "Pinterest"
 };
+
+// Registered in the OAuth architecture but not implemented yet — see
+// server/src/lib/oauth/providers/{tiktok,pinterest}.js.
+const COMING_SOON_PLATFORMS = new Set(["tiktok", "pinterest"]);
 
 const SECTION_META = {
   dashboard: { title: "Dashboard", subtitle: "Welcome back — here's your automation overview" },
@@ -1128,6 +1134,31 @@ function startOAuthFlow(platform, { mode = "connect", connectionId = null, accou
   };
 }
 
+/**
+ * Opens the shared disconnect confirmation modal and wires its confirm
+ * button to run `onConfirm`. Prevents accidental one-click disconnects.
+ */
+function confirmDisconnect({ label, onConfirm }) {
+  const bodyEl = document.getElementById("disconnect-confirm-body");
+  const confirmBtn = document.getElementById("disconnect-confirm-btn");
+  if (bodyEl) {
+    bodyEl.textContent = `This will remove the stored connection for ${label}. You can reconnect at any time.`;
+  }
+  openModal("disconnect-confirm-modal");
+  if (!confirmBtn) return;
+  confirmBtn.onclick = async () => {
+    setButtonLoading(confirmBtn, true);
+    try {
+      await onConfirm();
+      closeModal("disconnect-confirm-modal");
+    } catch (err) {
+      showToast(err.message || "Disconnect failed.", "error");
+    } finally {
+      setButtonLoading(confirmBtn, false);
+    }
+  };
+}
+
 function initConnectPages() {
   document.querySelectorAll(".connect-card").forEach((card) => {
     const btn = card.querySelector(".connect-btn");
@@ -1138,16 +1169,14 @@ function initConnectPages() {
       const state = cachedConnections[platform] || {};
 
       if (state.connected && !state.reconnectRequired) {
-        btn.disabled = true;
-        try {
-          await AlphaAPI.api(`/api/connections/${platform}`, { method: "DELETE" });
-          showToast(`${PLATFORM_LABELS[platform]} disconnected`, "info");
-          await refreshAllData();
-        } catch (err) {
-          showToast(err.message || "Disconnect failed.", "error");
-        } finally {
-          btn.disabled = false;
-        }
+        confirmDisconnect({
+          label: PLATFORM_LABELS[platform] || platform,
+          onConfirm: async () => {
+            await AlphaAPI.api(`/api/connections/${platform}`, { method: "DELETE" });
+            showToast(`${PLATFORM_LABELS[platform]} disconnected`, "info");
+            await refreshAllData();
+          }
+        });
         return;
       }
 
@@ -1187,17 +1216,23 @@ function renderConnections() {
     const btn = card.querySelector(".connect-btn");
     const reconnectBtn = card.querySelector(".reconnect-btn");
 
+    const comingSoon = COMING_SOON_PLATFORMS.has(platform);
+
     card.classList.toggle("connected", Boolean(state.connected));
     card.classList.toggle("needs-reconnect", Boolean(state.reconnectRequired));
+    card.classList.toggle("expired", state.status === "expired");
 
     if (status) {
-      if (state.reconnectRequired) status.textContent = "Reconnect required";
+      if (comingSoon) status.textContent = "Coming soon";
+      else if (state.status === "expired") status.textContent = "Expired";
+      else if (state.reconnectRequired) status.textContent = "Needs reconnect";
       else if (state.connected) {
         status.textContent =
           state.accountCount > 1 ? `Connected (${state.accountCount})` : "Connected";
       } else if (!state.configured) status.textContent = "Credentials not configured";
       else status.textContent = "Not connected";
       status.classList.toggle("connected", Boolean(state.connected) && !state.reconnectRequired);
+      status.classList.toggle("expired", Boolean(state.reconnectRequired) && !comingSoon);
     }
 
     if (account) {
@@ -1207,19 +1242,25 @@ function renderConnections() {
     }
 
     if (configEl) {
-      configEl.hidden = state.configured !== false || state.connected;
+      configEl.hidden = comingSoon || state.configured !== false || state.connected;
       configEl.textContent = state.configured
         ? ""
         : "Add provider env vars on the server to enable live OAuth.";
     }
 
     if (btn) {
-      btn.disabled = false;
-      if (state.connected && !state.reconnectRequired) {
+      if (comingSoon) {
+        btn.disabled = true;
+        btn.textContent = "Coming soon";
+        btn.classList.remove("btn-glow");
+        btn.classList.add("btn-outline-glow");
+      } else if (state.connected && !state.reconnectRequired) {
+        btn.disabled = false;
         btn.textContent = "Disconnect";
         btn.classList.add("btn-glow");
         btn.classList.remove("btn-outline-glow");
       } else {
+        btn.disabled = false;
         btn.textContent = state.configured ? "Connect" : "Connect (needs keys)";
         btn.classList.remove("btn-glow");
         btn.classList.add("btn-outline-glow");
@@ -1227,7 +1268,7 @@ function renderConnections() {
     }
 
     if (reconnectBtn) {
-      reconnectBtn.hidden = !state.reconnectRequired;
+      reconnectBtn.hidden = comingSoon || !state.reconnectRequired;
     }
   });
 
@@ -1256,11 +1297,18 @@ function renderConnectedAccountsList() {
     const expiry = acc.tokenExpiresAt
       ? `Expires ${new Date(acc.tokenExpiresAt).toLocaleString()}`
       : "No expiry on record";
+    const displayName = acc.accountName || acc.accountId || "Account";
+    const initials = displayName.slice(0, 2).toUpperCase();
+    const avatar = acc.avatarUrl
+      ? `<img class="account-avatar" src="${escapeHtml(acc.avatarUrl)}" alt="" loading="lazy">`
+      : `<span class="account-avatar account-avatar-fallback" aria-hidden="true">${escapeHtml(initials)}</span>`;
+    const badgeStatus = acc.status === "expired" ? "expired" : acc.status || "active";
     li.innerHTML = `
       <div class="scheduled-post-main">
+        ${avatar}
         <span class="platform-pill platform-${escapeHtml(acc.platform)}">${escapeHtml(PLATFORM_LABELS[acc.platform] || acc.platform)}</span>
-        <span class="status-badge status-${escapeHtml(acc.status || "active")}">${escapeHtml(acc.status || "active")}</span>
-        <strong>${escapeHtml(acc.accountName || acc.accountId)}</strong>
+        <span class="status-badge status-${escapeHtml(badgeStatus)}">${escapeHtml(badgeStatus === "expired" ? "Expired" : badgeStatus)}</span>
+        <strong>${escapeHtml(displayName)}</strong>
         <small>${escapeHtml(acc.accountUsername || "")} · ${escapeHtml(expiry)}</small>
       </div>
       <div class="scheduled-post-actions">
@@ -1270,22 +1318,22 @@ function renderConnectedAccountsList() {
             : `<button type="button" class="btn btn-outline-glow btn-sm" data-refresh-id="${acc.id}">Refresh token</button>
                <button type="button" class="btn btn-outline-glow btn-sm" data-validate-id="${acc.id}">Validate</button>`
         }
-        <button type="button" class="btn btn-outline-glow btn-sm danger" data-disconnect-id="${acc.id}">Disconnect</button>
+        <button type="button" class="btn btn-outline-glow btn-sm danger" data-disconnect-id="${acc.id}" data-account-label="${escapeHtml(`${PLATFORM_LABELS[acc.platform] || acc.platform} · ${displayName}`)}">Disconnect</button>
       </div>`;
     list.appendChild(li);
   });
 
   list.querySelectorAll("[data-disconnect-id]").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      try {
-        await AlphaAPI.api(`/api/connections/account/${btn.getAttribute("data-disconnect-id")}`, {
-          method: "DELETE"
-        });
-        showToast("Account disconnected", "info");
-        await refreshAllData();
-      } catch (err) {
-        showToast(err.message || "Disconnect failed.", "error");
-      }
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-disconnect-id");
+      confirmDisconnect({
+        label: btn.getAttribute("data-account-label") || "this account",
+        onConfirm: async () => {
+          await AlphaAPI.api(`/api/connections/account/${id}`, { method: "DELETE" });
+          showToast("Account disconnected", "info");
+          await refreshAllData();
+        }
+      });
     });
   });
 

@@ -963,8 +963,37 @@ select.invalid {
     color: #86efac;
 }
 
+.connect-status.expired {
+    color: #fbbf24;
+}
+
 .connect-btn.is-loading {
     opacity: 0.7;
+}
+
+/* .btn sets display:inline-flex, which otherwise beats the UA [hidden] rule
+   at equal specificity (author stylesheet loads after the UA sheet). Without
+   this, [hidden] reconnect/connect buttons stay visible. */
+.connect-card .reconnect-btn[hidden],
+.connect-card .connect-btn[hidden] {
+    display: none !important;
+}
+
+.connect-card.expired {
+    border-color: rgba(251, 191, 36, 0.45);
+}
+
+.connect-card.coming-soon {
+    opacity: 0.55;
+}
+
+.connect-card.coming-soon:hover {
+    transform: none;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.connect-card.coming-soon .connect-btn {
+    cursor: not-allowed;
 }
 
 /* AI Tools */
@@ -1994,6 +2023,28 @@ textarea:focus-visible,
 .status-published { color: #86efac; background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.35); }
 .status-failed { color: #fca5a5; background: rgba(248, 113, 113, 0.12); border-color: rgba(248, 113, 113, 0.35); }
 .status-cancelled { color: #cbd5e1; background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.35); }
+.status-active { color: #86efac; background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.35); }
+.status-expired { color: #fbbf24; background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.35); }
+.status-revoked { color: #fca5a5; background: rgba(248, 113, 113, 0.12); border-color: rgba(248, 113, 113, 0.35); }
+
+.account-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+.account-avatar-fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(139, 92, 246, 0.25);
+    color: #ddd6fe;
+    font-size: 0.65rem;
+    font-weight: 700;
+}
 
 .post-error {
     display: block;
@@ -2037,6 +2088,8 @@ textarea:focus-visible,
 .platform-pill.platform-linkedin { background: rgba(14, 165, 233, 0.18); color: #7dd3fc; }
 .platform-pill.platform-x { background: rgba(148, 163, 184, 0.2); color: #e2e8f0; }
 .platform-pill.platform-youtube { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+.platform-pill.platform-tiktok { background: rgba(148, 163, 184, 0.18); color: #e2e8f0; }
+.platform-pill.platform-pinterest { background: rgba(230, 0, 35, 0.18); color: #fca5a5; }
 
 .quick-actions {
     padding: 20px;

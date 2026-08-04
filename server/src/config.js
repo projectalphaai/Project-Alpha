@@ -34,8 +34,12 @@ export const config = {
     appId: requireEnv("META_APP_ID", { optional: !isProd }),
     appSecret: requireEnv("META_APP_SECRET", { optional: !isProd }),
     graphVersion: process.env.META_GRAPH_VERSION || "v22.0",
+    // META_REDIRECT_URI is the canonical name; META_OAUTH_REDIRECT_URI is kept
+    // as a backward-compatible alias for existing deployments.
     redirectUri:
-      optionalEnv("META_OAUTH_REDIRECT_URI") || `${appUrl}/api/oauth/meta/callback`
+      optionalEnv("META_REDIRECT_URI") ||
+      optionalEnv("META_OAUTH_REDIRECT_URI") ||
+      `${appUrl}/api/oauth/meta/callback`
   },
   google: {
     clientId: optionalEnv("GOOGLE_CLIENT_ID"),
@@ -102,6 +106,9 @@ export function oauthProviderStatus() {
     facebook: Boolean(config.meta.appId && config.meta.appSecret),
     youtube: Boolean(config.google.clientId && config.google.clientSecret),
     linkedin: Boolean(config.linkedin.clientId && config.linkedin.clientSecret),
-    x: Boolean(config.x.clientId && config.x.clientSecret)
+    x: Boolean(config.x.clientId && config.x.clientSecret),
+    // Architecture placeholders — see server/src/lib/oauth/providers/{tiktok,pinterest}.js
+    tiktok: false,
+    pinterest: false
   };
 }

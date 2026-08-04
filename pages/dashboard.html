@@ -330,7 +330,7 @@
             <!-- Social Connections -->
             <section id="connect" class="dashboard-section" aria-labelledby="connect-heading">
                 <h2 id="connect-heading">Social Connections</h2>
-                <p class="section-lead">Production OAuth for Instagram, Facebook Pages, YouTube, LinkedIn, and X. Tokens are encrypted in PostgreSQL. If a provider’s credentials are missing, Connect returns a clear configuration error — never a fake connection.</p>
+                <p class="section-lead">Production OAuth for Instagram, Facebook Pages, YouTube, LinkedIn, and X. Tokens are encrypted in PostgreSQL. If a provider’s credentials are missing, Connect returns a clear configuration error — never a fake connection. TikTok and Pinterest are wired into the architecture and will appear as connectable the moment their providers ship.</p>
                 <div class="connect-grid" id="connect-grid">
                     <div class="connect-card glass-panel" id="instagram" data-platform="instagram">
                         <img src="../img/instagram.svg" alt="" width="32" height="32">
@@ -384,6 +384,28 @@
                         <p class="connect-meta" data-config hidden></p>
                         <div class="connect-actions">
                             <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect">Connect</button>
+                            <button type="button" class="btn btn-outline-glow btn-sm reconnect-btn" data-action="reconnect" hidden>Reconnect</button>
+                        </div>
+                    </div>
+                    <div class="connect-card glass-panel coming-soon" id="tiktok" data-platform="tiktok">
+                        <img src="../img/tiktok.svg" alt="" width="32" height="32">
+                        <h3>TikTok</h3>
+                        <span class="connect-status" data-status>Coming soon</span>
+                        <p class="connect-meta" data-account hidden></p>
+                        <p class="connect-meta" data-config hidden></p>
+                        <div class="connect-actions">
+                            <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect" disabled>Coming soon</button>
+                            <button type="button" class="btn btn-outline-glow btn-sm reconnect-btn" data-action="reconnect" hidden>Reconnect</button>
+                        </div>
+                    </div>
+                    <div class="connect-card glass-panel coming-soon" id="pinterest" data-platform="pinterest">
+                        <img src="../img/pinterest.svg" alt="" width="32" height="32">
+                        <h3>Pinterest</h3>
+                        <span class="connect-status" data-status>Coming soon</span>
+                        <p class="connect-meta" data-account hidden></p>
+                        <p class="connect-meta" data-config hidden></p>
+                        <div class="connect-actions">
+                            <button type="button" class="btn btn-outline-glow btn-sm connect-btn" data-action="connect" disabled>Coming soon</button>
                             <button type="button" class="btn btn-outline-glow btn-sm reconnect-btn" data-action="reconnect" hidden>Reconnect</button>
                         </div>
                     </div>
@@ -968,6 +990,22 @@
                 <button type="button" class="btn btn-outline-glow btn-sm" data-close-modal="oauth-modal">Cancel</button>
                 <button type="button" class="btn btn-glow btn-sm" id="oauth-confirm-btn">
                     <span class="btn-label">Continue to provider</span>
+                    <span class="btn-spinner" hidden aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="pa-modal" id="disconnect-confirm-modal" hidden>
+        <div class="pa-modal-backdrop" data-close-modal="disconnect-confirm-modal"></div>
+        <div class="pa-modal-dialog glass-panel" role="alertdialog" aria-modal="true" aria-labelledby="disconnect-confirm-title">
+            <button type="button" class="pa-modal-close" data-close-modal="disconnect-confirm-modal" aria-label="Close">&times;</button>
+            <h2 id="disconnect-confirm-title">Disconnect account?</h2>
+            <p id="disconnect-confirm-body" class="oauth-note">This will remove the stored connection. You can reconnect at any time.</p>
+            <div class="pa-modal-actions">
+                <button type="button" class="btn btn-outline-glow btn-sm" data-close-modal="disconnect-confirm-modal">Cancel</button>
+                <button type="button" class="btn btn-glow btn-sm danger" id="disconnect-confirm-btn">
+                    <span class="btn-label">Disconnect</span>
                     <span class="btn-spinner" hidden aria-hidden="true"></span>
                 </button>
             </div>

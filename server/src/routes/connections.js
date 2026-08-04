@@ -122,6 +122,7 @@ router.get("/", requireAuth, requireRole("member"), async (req, res, next) => {
         accountId: primary?.accountId || null,
         accountName: primary?.accountName || null,
         accountUsername: primary?.accountUsername || null,
+        avatarUrl: primary?.avatarUrl || null,
         status: primary?.status || null,
         reconnectRequired: primary?.reconnectRequired || false,
         tokenExpiresAt: primary?.tokenExpiresAt || null,

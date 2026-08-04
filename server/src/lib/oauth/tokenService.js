@@ -15,6 +15,7 @@ export function serializeConnection(row, { includeSecrets = false } = {}) {
   const expired = isTokenExpired(row.tokenExpiresAt);
   const status = row.status === "revoked" ? "revoked" : expired ? "expired" : row.status || "active";
   const reconnectRequired = Boolean(row.reconnectRequired) || expired || status === "expired";
+  const metadata = safeJson(row.metadataJson);
 
   const base = {
     id: row.id,
@@ -22,6 +23,7 @@ export function serializeConnection(row, { includeSecrets = false } = {}) {
     accountId: row.accountId,
     accountName: row.accountName,
     accountUsername: row.accountUsername || "",
+    avatarUrl: metadata.profilePictureUrl || metadata.pictureUrl || null,
     pageId: row.pageId || "",
     scopes: row.scopes || "",
     status,
