@@ -1806,6 +1806,112 @@ textarea:focus-visible,
     to { height: var(--bar-h, 40%); opacity: 1; }
 }
 
+/* Analytics: posts timeline (Sprint — analytics dashboard) */
+.timeline-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    min-height: 200px;
+    padding: 12px 4px 4px;
+    overflow-x: auto;
+}
+
+.timeline-bar-col {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1 0 10px;
+    min-width: 6px;
+    height: 180px;
+    gap: 1px;
+}
+
+.timeline-bar-published,
+.timeline-bar-failed {
+    width: 100%;
+    border-radius: 3px 3px 0 0;
+    min-height: 0;
+}
+
+.timeline-bar-published {
+    background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+}
+
+.timeline-bar-failed {
+    background: linear-gradient(180deg, #f87171 0%, #b91c1c 100%);
+}
+
+.timeline-legend {
+    display: flex;
+    gap: 18px;
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.timeline-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.timeline-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.timeline-swatch-published {
+    background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+}
+
+.timeline-swatch-failed {
+    background: linear-gradient(180deg, #f87171 0%, #b91c1c 100%);
+}
+
+/* Analytics: platform breakdown */
+.platform-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-top: 4px;
+}
+
+.platform-bar-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 40px;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+}
+
+.platform-bar-track {
+    height: 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.platform-bar-fill {
+    height: 100%;
+    width: var(--bar-w, 0%);
+    border-radius: 6px;
+    background: linear-gradient(90deg, #8b5cf6 0%, #3b82f6 100%);
+    animation: barGrow 0.6s ease both;
+}
+
+.platform-bar-count {
+    text-align: right;
+    color: var(--text-muted);
+}
+
+@keyframes barGrow {
+    from { width: 0; }
+    to { width: var(--bar-w, 0%); }
+}
+
 .activity-list,
 .upcoming-list,
 .scheduled-posts-list,

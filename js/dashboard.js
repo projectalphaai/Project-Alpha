@@ -16,7 +16,7 @@ const SECTION_META = {
   "ai-agents": { title: "AI Agents", subtitle: "Available in a later sprint" },
   leads: { title: "Leads", subtitle: "Search, filter, and manage your lead database" },
   crm: { title: "CRM Pipeline", subtitle: "Drag-and-drop kanban synced with PostgreSQL" },
-  analytics: { title: "Analytics", subtitle: "Available in a later sprint" },
+  analytics: { title: "Analytics", subtitle: "Publishing performance from your own data" },
   inbox: { title: "Inbox", subtitle: "Available in a later sprint" },
   settings: { title: "Settings", subtitle: "Manage your profile and preferences" }
 };
@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initLeadsCrm();
   initSettings();
   initBilling();
+  initAnalytics();
   initKeyboardA11y();
   initOAuthQueryFeedback();
   disableFutureSprintMocks();
@@ -1729,8 +1730,123 @@ function handleBillingQueryFeedback() {
   }
 }
 
+/* ---------- Analytics (real data from /api/analytics/overview) ---------- */
+
+function initAnalytics() {
+  const rangeSelect = document.getElementById("analytics-range");
+  const refreshBtn = document.getElementById("analytics-refresh");
+  if (!rangeSelect && !refreshBtn) return;
+
+  refreshAnalytics().catch(() => {});
+
+  rangeSelect?.addEventListener("change", () => {
+    refreshAnalytics().catch(() => {});
+  });
+
+  refreshBtn?.addEventListener("click", async () => {
+    setButtonLoading(refreshBtn, true);
+    await refreshAnalytics().catch(() => {});
+    setButtonLoading(refreshBtn, false);
+  });
+}
+
+async function refreshAnalytics() {
+  const range = document.getElementById("analytics-range")?.value || "30";
+  try {
+    const data = await AlphaAPI.api(`/api/analytics/overview?range=${encodeURIComponent(range)}`);
+    renderAnalytics(data);
+  } catch (err) {
+    showToast(err.message || "Could not load analytics.", "error");
+  }
+}
+
+function renderAnalytics(data) {
+  const totals = data.totals || {};
+  const statsRoot = document.getElementById("analytics-stats");
+  if (statsRoot) {
+    statsRoot.querySelector('[data-metric="total"]').textContent = totals.total ?? 0;
+    statsRoot.querySelector('[data-metric="published"]').textContent = totals.published ?? 0;
+    statsRoot.querySelector('[data-metric="failed"]').textContent = totals.failed ?? 0;
+    statsRoot.querySelector('[data-metric="successRate"]').textContent =
+      data.successRate === null || data.successRate === undefined ? "—" : `${data.successRate}%`;
+    const totalMeta = statsRoot.querySelector('[data-metric-meta="total"]');
+    if (totalMeta) totalMeta.textContent = `in last ${data.range || 30} days`;
+  }
+
+  renderAnalyticsTimeline(data.timeline || []);
+  renderAnalyticsPlatforms(data.byPlatform || []);
+
+  const topPlatformEl = document.getElementById("analytics-top-platform");
+  if (topPlatformEl) {
+    topPlatformEl.textContent = data.topPlatform
+      ? `${PLATFORM_LABELS[data.topPlatform] || data.topPlatform} is your most-used platform.`
+      : "Not enough data yet — schedule a few posts.";
+  }
+
+  const connSummary = document.getElementById("analytics-connections-summary");
+  if (connSummary) {
+    const c = data.connections || { total: 0, active: 0, reconnectRequired: 0 };
+    connSummary.textContent =
+      c.total === 0
+        ? "No accounts connected yet. Visit Social Connections to get started."
+        : `${c.active} of ${c.total} connected account(s) healthy${
+            c.reconnectRequired ? ` — ${c.reconnectRequired} need reconnecting.` : "."
+          }`;
+  }
+}
+
+function renderAnalyticsTimeline(timeline) {
+  const chart = document.getElementById("analytics-timeline-chart");
+  const empty = document.getElementById("analytics-timeline-empty");
+  if (!chart) return;
+
+  const hasData = timeline.some((d) => d.published || d.failed);
+  if (empty) empty.hidden = hasData;
+  chart.hidden = !hasData && timeline.length === 0;
+
+  const max = Math.max(...timeline.map((d) => d.published + d.failed), 1);
+  chart.innerHTML = timeline
+    .map((d) => {
+      const pubH = Math.round((d.published / max) * 100);
+      const failH = Math.round((d.failed / max) * 100);
+      const title = `${d.date}: ${d.published} published, ${d.failed} failed`;
+      return `<div class="timeline-bar-col" title="${escapeHtml(title)}">
+        ${d.failed ? `<div class="timeline-bar-failed" style="height:${Math.max(failH, 3)}%"></div>` : ""}
+        ${d.published ? `<div class="timeline-bar-published" style="height:${Math.max(pubH, 3)}%"></div>` : ""}
+      </div>`;
+    })
+    .join("");
+}
+
+function renderAnalyticsPlatforms(byPlatform) {
+  const root = document.getElementById("analytics-platform-bars");
+  const empty = document.getElementById("analytics-platform-empty");
+  if (!root) return;
+
+  if (!byPlatform.length) {
+    if (empty) empty.hidden = false;
+    root.innerHTML = "";
+    return;
+  }
+  if (empty) empty.hidden = true;
+
+  const max = Math.max(...byPlatform.map((p) => p.total), 1);
+  root.innerHTML = byPlatform
+    .slice()
+    .sort((a, b) => b.total - a.total)
+    .map((p) => {
+      const pct = Math.round((p.total / max) * 100);
+      return `<div class="platform-bar-row">
+        <span class="platform-pill platform-${escapeHtml(p.platform)}">${escapeHtml(PLATFORM_LABELS[p.platform] || p.platform)}</span>
+        <div class="platform-bar-track"><div class="platform-bar-fill" style="--bar-w:${pct}%"></div></div>
+        <span class="platform-bar-count">${p.total}</span>
+      </div>`;
+    })
+    .join("");
+}
+
 function disableFutureSprintMocks() {
-  ["ai-agents", "analytics", "inbox"].forEach((id) => {
+  ["ai-agents", "inbox"].forEach((id) => {
     const section = document.getElementById(id);
     if (!section) return;
     if (section.querySelector("[data-sprint-gate]")) return;

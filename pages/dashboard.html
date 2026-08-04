@@ -771,70 +771,50 @@
                 </div>
                 <div class="stats-grid analytics-stats" id="analytics-stats">
                     <div class="stat-card glass-panel">
-                        <h3>Impressions</h3>
-                        <p class="stat-value" data-metric="impressions">48.2K</p>
-                        <span class="stat-change positive" data-metric-change="impressions">+9.4%</span>
+                        <h3>Total Posts</h3>
+                        <p class="stat-value" data-metric="total">0</p>
+                        <span class="stat-change" data-metric-meta="total">in selected range</span>
                     </div>
                     <div class="stat-card glass-panel">
-                        <h3>Reach</h3>
-                        <p class="stat-value" data-metric="reach">31.7K</p>
-                        <span class="stat-change positive" data-metric-change="reach">+6.1%</span>
+                        <h3>Published</h3>
+                        <p class="stat-value" data-metric="published">0</p>
+                        <span class="stat-change" data-metric-meta="published">Live publish</span>
                     </div>
                     <div class="stat-card glass-panel">
-                        <h3>Profile Visits</h3>
-                        <p class="stat-value" data-metric="visits">2,840</p>
-                        <span class="stat-change positive" data-metric-change="visits">+14%</span>
+                        <h3>Failed</h3>
+                        <p class="stat-value" data-metric="failed">0</p>
+                        <span class="stat-change" data-metric-meta="failed">Retry from queue</span>
                     </div>
                     <div class="stat-card glass-panel">
-                        <h3>Link Clicks</h3>
-                        <p class="stat-value" data-metric="clicks">891</p>
-                        <span class="stat-change" data-metric-change="clicks">−2.1%</span>
+                        <h3>Success Rate</h3>
+                        <p class="stat-value" data-metric="successRate">—</p>
+                        <span class="stat-change" data-metric-meta="successRate">published vs failed</span>
                     </div>
                 </div>
                 <div class="charts-grid">
-                    <div class="chart-card glass-panel is-loading" data-chart-card="engagementMetricsChart">
-                        <h3>Engagement Metrics</h3>
-                        <div class="chart-skeleton" aria-hidden="true">
-                            <div class="skeleton-donut"></div>
-                        </div>
-                        <div class="chart-error" hidden role="alert">Charts unavailable. Check your connection and refresh.</div>
-                        <div class="chart-wrapper">
-                            <canvas id="engagementMetricsChart" aria-label="Engagement metrics chart"></canvas>
+                    <div class="chart-card glass-panel">
+                        <h3>Posts Timeline</h3>
+                        <p class="panel-meta" id="analytics-timeline-empty" hidden>No posts in this range yet.</p>
+                        <div class="timeline-chart" id="analytics-timeline-chart" role="img" aria-label="Published and failed posts per day"></div>
+                        <div class="timeline-legend">
+                            <span><i class="timeline-swatch timeline-swatch-published"></i> Published</span>
+                            <span><i class="timeline-swatch timeline-swatch-failed"></i> Failed</span>
                         </div>
                     </div>
-                    <div class="chart-card glass-panel is-loading" data-chart-card="reachImpressionsChart">
-                        <h3>Reach &amp; Impressions</h3>
-                        <div class="chart-skeleton" aria-hidden="true">
-                            <div class="skeleton-line"></div>
-                        </div>
-                        <div class="chart-error" hidden role="alert">Charts unavailable. Check your connection and refresh.</div>
-                        <div class="chart-wrapper">
-                            <canvas id="reachImpressionsChart" aria-label="Reach and impressions chart"></canvas>
-                        </div>
+                    <div class="chart-card glass-panel">
+                        <h3>Platform Breakdown</h3>
+                        <p class="panel-meta" id="analytics-platform-empty" hidden>No posts scheduled yet.</p>
+                        <div class="platform-bars" id="analytics-platform-bars"></div>
                     </div>
                 </div>
                 <div class="analytics-extras">
                     <div class="trending-section glass-panel">
-                        <h3>Trending Hashtags</h3>
-                        <div class="hashtag-list">
-                            <span class="hashtag">#socialmediamarketing</span>
-                            <span class="hashtag">#digitalmarketing</span>
-                            <span class="hashtag">#contentcreator</span>
-                            <span class="hashtag">#smallbusiness</span>
-                            <span class="hashtag">#marketingtips</span>
-                            <span class="hashtag">#AItools</span>
-                        </div>
+                        <h3>Top Platform</h3>
+                        <p class="panel-meta" id="analytics-top-platform">Not enough data yet — schedule a few posts.</p>
                     </div>
                     <div class="best-time-section glass-panel">
-                        <h3>Best Posting Times</h3>
-                        <p>Based on your audience, the optimal times to post are:</p>
-                        <ul>
-                            <li>Monday: 10 AM, 2 PM</li>
-                            <li>Tuesday: 11 AM, 3 PM</li>
-                            <li>Wednesday: 9 AM, 1 PM</li>
-                            <li>Thursday: 12 PM, 4 PM</li>
-                            <li>Friday: 10 AM, 5 PM</li>
-                        </ul>
+                        <h3>Connection Health</h3>
+                        <p id="analytics-connections-summary">No accounts connected yet. Visit Social Connections to get started.</p>
                     </div>
                 </div>
             </section>
