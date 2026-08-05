@@ -2,11 +2,13 @@ import { assertRuntimeSecrets, config } from "./config.js";
 import { createApp } from "./app.js";
 import { prisma } from "./lib/prisma.js";
 import { startPublisherWorker, stopPublisherWorker } from "./worker/publisherWorker.js";
+import { startClipWorker, stopClipWorker } from "./worker/clipWorker.js";
 
 assertRuntimeSecrets();
 
 const app = createApp();
 let workerHandle = null;
+let clipWorkerHandle = null;
 
 async function start() {
   try {
@@ -21,6 +23,7 @@ async function start() {
     console.log(`Project Alpha API listening on ${config.appUrl} (port ${config.port})`);
     console.log(`Database: PostgreSQL | Sprint: 9`);
     workerHandle = startPublisherWorker();
+    clipWorkerHandle = startClipWorker();
   });
 }
 
@@ -31,6 +34,8 @@ async function shutdown(signal) {
   try {
     stopPublisherWorker();
     workerHandle = null;
+    stopClipWorker();
+    clipWorkerHandle = null;
     await prisma.$disconnect();
   } finally {
     process.exit(0);

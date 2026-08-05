@@ -14,10 +14,16 @@ const PLATFORM_LABELS = {
 // server/src/lib/oauth/providers/{tiktok,pinterest}.js.
 const COMING_SOON_PLATFORMS = new Set(["tiktok", "pinterest"]);
 
+// Sprint 11 — AI Smart Scheduler
+const SCHEDULER_PLATFORMS = ["instagram", "facebook", "linkedin", "x", "youtube", "tiktok", "pinterest"];
+const PRIORITY_LABELS = { low: "Low", normal: "Normal", high: "High", urgent: "Urgent" };
+
 const SECTION_META = {
   dashboard: { title: "Dashboard", subtitle: "Welcome back — here's your automation overview" },
   schedule: { title: "Scheduler", subtitle: "Calendar, publish queue, and post status" },
   connect: { title: "Social Connections", subtitle: "OAuth for Instagram, Facebook, YouTube, LinkedIn, and X" },
+  "clip-ai": { title: "Clip AI", subtitle: "Upload long-form video, get real AI-detected viral clips" },
+  "top-performing-clips": { title: "Top Performing Clips", subtitle: "Ranked by real platform analytics" },
   "ai-tools": { title: "AI Content Generator", subtitle: "Generate captions with OpenAI" },
   "ai-agents": { title: "AI Agents", subtitle: "Available in a later sprint" },
   leads: { title: "Leads", subtitle: "Search, filter, and manage your lead database" },
@@ -84,6 +90,33 @@ function showToast(message, type = "success") {
     toast.classList.remove("show");
     setTimeout(() => toast.remove(), 250);
   }, 3200);
+}
+
+function showUndoToast(message, onUndo, duration = 6000) {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+  const toast = document.createElement("div");
+  toast.className = "toast toast-info toast-undo";
+  toast.setAttribute("role", "status");
+  const text = document.createElement("span");
+  text.textContent = message;
+  const undoBtn = document.createElement("button");
+  undoBtn.type = "button";
+  undoBtn.className = "toast-undo-btn";
+  undoBtn.textContent = "Undo";
+  const dismiss = () => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 250);
+  };
+  undoBtn.addEventListener("click", async () => {
+    dismiss();
+    await onUndo();
+  });
+  toast.appendChild(text);
+  toast.appendChild(undoBtn);
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("show"));
+  setTimeout(dismiss, duration);
 }
 
 function setButtonLoading(btn, loading) {
@@ -280,7 +313,7 @@ async function refreshAllData() {
     const [connData, postsData, activityData, leadsData, statsData, meData, founderData] =
       await Promise.all([
         AlphaAPI.api("/api/connections"),
-        AlphaAPI.api("/api/posts"),
+        AlphaAPI.api("/api/posts?includeArchived=1"),
         AlphaAPI.api("/api/activity?limit=30"),
         AlphaAPI.api(buildLeadsQuery()),
         AlphaAPI.api("/api/leads/stats"),
@@ -516,27 +549,102 @@ function statusBadge(status) {
 /* ---------- Scheduler ---------- */
 
 let calendarViewDate = new Date();
+let weekViewDate = startOfWeek(new Date());
+let dayViewDate = new Date();
+let schedulerView = "calendar";
+let schedulerFilters = { platform: "", status: "", source: "" };
+let queueSubTab = "all";
+
+function startOfWeek(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+function localDateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatHourLabel(hour) {
+  const period = hour < 12 ? "AM" : "PM";
+  const display = hour % 12 === 0 ? 12 : hour % 12;
+  return `${display} ${period}`;
+}
+
+/** Applies the scheduler filters bar. Archived posts are hidden unless explicitly filtered for. */
+function filteredPosts(base = cachedPosts) {
+  return base.filter((p) => {
+    if (schedulerFilters.status) {
+      if (p.status !== schedulerFilters.status) return false;
+    } else if (p.status === "archived") {
+      return false;
+    }
+    if (schedulerFilters.platform && p.platform !== schedulerFilters.platform) return false;
+    if (schedulerFilters.source && (p.source || "manual") !== schedulerFilters.source) return false;
+    return true;
+  });
+}
+
+async function reschedulePost(postId, newDate) {
+  const post = cachedPosts.find((p) => p.id === postId);
+  if (!post) return;
+  if (!["draft", "scheduled", "failed"].includes(post.status)) {
+    showToast("Only draft, scheduled, or failed posts can be rescheduled.", "error");
+    return;
+  }
+  try {
+    await AlphaAPI.api(`/api/posts/${postId}`, {
+      method: "PUT",
+      body: {
+        platform: post.platform,
+        caption: post.caption,
+        mediaUrl: post.mediaUrl || "",
+        media: post.media || [],
+        status: post.status === "draft" ? "draft" : "scheduled",
+        priority: post.priority || "normal",
+        scheduledAt: newDate.toISOString()
+      }
+    });
+    showToast("Post rescheduled");
+    await refreshAllData();
+  } catch (err) {
+    showToast(err.message || "Reschedule failed.", "error");
+  }
+}
+
+function renderSchedulerActiveView() {
+  if (schedulerView === "calendar") renderCalendar();
+  else if (schedulerView === "week") renderWeekView();
+  else if (schedulerView === "day") renderDayView();
+  else if (schedulerView === "list") renderScheduledList();
+  else if (schedulerView === "queue") renderPublishQueue();
+  else if (schedulerView === "history") renderPublishHistory();
+}
 
 function initSchedulerViews() {
-  const calendarView = document.getElementById("scheduler-calendar-view");
-  const listView = document.getElementById("scheduler-list-view");
-  const queueView = document.getElementById("scheduler-queue-view");
-  const historyView = document.getElementById("scheduler-history-view");
+  const views = {
+    calendar: document.getElementById("scheduler-calendar-view"),
+    week: document.getElementById("scheduler-week-view"),
+    day: document.getElementById("scheduler-day-view"),
+    list: document.getElementById("scheduler-list-view"),
+    queue: document.getElementById("scheduler-queue-view"),
+    history: document.getElementById("scheduler-history-view")
+  };
+
   document.querySelectorAll("[data-scheduler-view]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const view = btn.getAttribute("data-scheduler-view");
+      schedulerView = view;
       document.querySelectorAll("[data-scheduler-view]").forEach((b) => {
         const active = b === btn;
         b.classList.toggle("active", active);
         b.setAttribute("aria-pressed", active ? "true" : "false");
       });
-      if (calendarView) calendarView.hidden = view !== "calendar";
-      if (listView) listView.hidden = view !== "list";
-      if (queueView) queueView.hidden = view !== "queue";
-      if (historyView) historyView.hidden = view !== "history";
-      if (view === "list") renderScheduledList();
-      if (view === "queue") renderPublishQueue();
-      if (view === "history") renderPublishHistory();
+      Object.entries(views).forEach(([key, el]) => {
+        if (el) el.hidden = key !== view;
+      });
+      renderSchedulerActiveView();
     });
   });
 
@@ -554,6 +662,76 @@ function initSchedulerViews() {
     calendarViewDate = new Date(now.getFullYear(), now.getMonth(), 1);
     renderCalendar();
   });
+
+  document.getElementById("week-prev")?.addEventListener("click", () => {
+    weekViewDate.setDate(weekViewDate.getDate() - 7);
+    renderWeekView();
+  });
+  document.getElementById("week-next")?.addEventListener("click", () => {
+    weekViewDate.setDate(weekViewDate.getDate() + 7);
+    renderWeekView();
+  });
+  document.getElementById("week-today")?.addEventListener("click", () => {
+    weekViewDate = startOfWeek(new Date());
+    renderWeekView();
+  });
+
+  document.getElementById("day-prev")?.addEventListener("click", () => {
+    dayViewDate = new Date(dayViewDate);
+    dayViewDate.setDate(dayViewDate.getDate() - 1);
+    renderDayView();
+  });
+  document.getElementById("day-next")?.addEventListener("click", () => {
+    dayViewDate = new Date(dayViewDate);
+    dayViewDate.setDate(dayViewDate.getDate() + 1);
+    renderDayView();
+  });
+  document.getElementById("day-today")?.addEventListener("click", () => {
+    dayViewDate = new Date();
+    renderDayView();
+  });
+
+  const platformFilter = document.getElementById("filter-platform");
+  if (platformFilter) {
+    SCHEDULER_PLATFORMS.forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p;
+      opt.textContent = PLATFORM_LABELS[p] || p;
+      platformFilter.appendChild(opt);
+    });
+  }
+  const onFiltersChanged = () => {
+    schedulerFilters = {
+      platform: document.getElementById("filter-platform")?.value || "",
+      status: document.getElementById("filter-status")?.value || "",
+      source: document.getElementById("filter-source")?.value || ""
+    };
+    renderSchedulerActiveView();
+  };
+  document.getElementById("filter-platform")?.addEventListener("change", onFiltersChanged);
+  document.getElementById("filter-status")?.addEventListener("change", onFiltersChanged);
+  document.getElementById("filter-source")?.addEventListener("change", onFiltersChanged);
+  document.getElementById("filters-clear")?.addEventListener("click", () => {
+    ["filter-platform", "filter-status", "filter-source"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    onFiltersChanged();
+  });
+
+  document.querySelectorAll("[data-queue-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      queueSubTab = btn.getAttribute("data-queue-tab");
+      document.querySelectorAll("[data-queue-tab]").forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle("active", active);
+        b.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      renderPublishQueue();
+    });
+  });
+
+  initCloneSeriesModal();
 
   document.getElementById("run-connection-health")?.addEventListener("click", async () => {
     const summary = document.getElementById("connection-health-summary");
@@ -605,7 +783,7 @@ function renderCalendar() {
   const month = calendarViewDate.getMonth();
   label.textContent = calendarViewDate.toLocaleString("en-US", { month: "long", year: "numeric" });
 
-  const events = cachedPosts
+  const events = filteredPosts()
     .filter((p) => p.status !== "cancelled")
     .map((p) => {
       const d = new Date(p.scheduledAt || p.datetime);
@@ -664,6 +842,21 @@ function renderCalendar() {
       });
       cell.appendChild(dots);
     }
+    cell.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      cell.classList.add("drag-over");
+    });
+    cell.addEventListener("dragleave", () => cell.classList.remove("drag-over"));
+    cell.addEventListener("drop", (e) => {
+      e.preventDefault();
+      cell.classList.remove("drag-over");
+      const postId = e.dataTransfer.getData("text/plain");
+      const post = cachedPosts.find((p) => p.id === postId);
+      if (!post) return;
+      const original = new Date(post.scheduledAt);
+      const updated = new Date(year, month, day, original.getHours(), original.getMinutes());
+      reschedulePost(postId, updated);
+    });
     cell.addEventListener("click", () => {
       grid.querySelectorAll(".cal-day.selected").forEach((d) => d.classList.remove("selected"));
       cell.classList.add("selected");
@@ -683,11 +876,18 @@ function renderCalendar() {
         const li = document.createElement("li");
         li.className = "event-item";
         li.dataset.day = String(ev.day);
+        if (["draft", "scheduled", "failed"].includes(ev.status)) {
+          li.draggable = true;
+          li.addEventListener("dragstart", (e) => {
+            e.dataTransfer.setData("text/plain", ev.id);
+            e.dataTransfer.effectAllowed = "move";
+          });
+        }
         li.innerHTML = `
           <span class="event-date">${String(ev.day).padStart(2, "0")}</span>
           <div class="event-body">
             <strong>${escapeHtml(ev.title)}</strong>
-            <span>${PLATFORM_LABELS[ev.platform] || ev.platform} · ${escapeHtml(ev.time)} · ${statusBadge(ev.status)}</span>
+            <span>${PLATFORM_LABELS[ev.platform] || ev.platform} · ${escapeHtml(ev.time)} · ${statusBadge(ev.status)} ${priorityPill(ev.raw.priority)} ${sourcePill(ev.raw.source)}</span>
             <div class="event-actions">${postActionButtons(ev.raw)}</div>
           </div>`;
         eventList.appendChild(li);
@@ -697,10 +897,122 @@ function renderCalendar() {
   }
 }
 
+function renderWeekView() {
+  const grid = document.getElementById("week-grid");
+  const label = document.getElementById("week-label");
+  if (!grid || !label) return;
+
+  const start = new Date(weekViewDate);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  label.textContent = `${start.toLocaleDateString([], { month: "short", day: "numeric" })} – ${end.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}`;
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  renderHourGrid(grid, days, {
+    headerLabel: (d) => d.toLocaleDateString([], { weekday: "short", day: "numeric" })
+  });
+}
+
+function renderDayView() {
+  const grid = document.getElementById("day-grid");
+  const label = document.getElementById("day-label");
+  if (!grid || !label) return;
+
+  label.textContent = dayViewDate.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+  renderHourGrid(grid, [dayViewDate], {
+    headerLabel: (d) => d.toLocaleDateString([], { month: "short", day: "numeric" })
+  });
+}
+
+function renderHourGrid(grid, days, { headerLabel }) {
+  grid.innerHTML = "";
+  const corner = document.createElement("div");
+  corner.className = "hour-col-header";
+  grid.appendChild(corner);
+  days.forEach((d) => {
+    const header = document.createElement("div");
+    header.className = "hour-col-header";
+    header.textContent = headerLabel(d);
+    grid.appendChild(header);
+  });
+
+  const posts = filteredPosts().filter((p) => p.status !== "cancelled");
+
+  for (let hour = 0; hour < 24; hour += 1) {
+    const labelCell = document.createElement("div");
+    labelCell.className = "hour-label-cell";
+    labelCell.textContent = formatHourLabel(hour);
+    grid.appendChild(labelCell);
+
+    days.forEach((day) => {
+      const slot = document.createElement("div");
+      slot.className = "hour-slot";
+      const dateKey = localDateKey(day);
+      slot.dataset.date = dateKey;
+      slot.dataset.hour = String(hour);
+
+      const slotPosts = posts.filter((p) => {
+        const d = new Date(p.scheduledAt);
+        return localDateKey(d) === dateKey && d.getHours() === hour;
+      });
+      slotPosts.forEach((p) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = `hour-event platform-${p.platform}`;
+        chip.title = p.caption || "";
+        chip.textContent = `${PLATFORM_LABELS[p.platform] || p.platform} · ${(p.caption || "").slice(0, 32)}`;
+        if (["draft", "scheduled", "failed"].includes(p.status)) {
+          chip.draggable = true;
+          chip.addEventListener("dragstart", (e) => {
+            e.dataTransfer.setData("text/plain", p.id);
+            e.dataTransfer.effectAllowed = "move";
+          });
+        }
+        chip.addEventListener("click", () => openScheduleModal(p));
+        slot.appendChild(chip);
+      });
+
+      slot.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        slot.classList.add("drag-over");
+      });
+      slot.addEventListener("dragleave", () => slot.classList.remove("drag-over"));
+      slot.addEventListener("drop", (e) => {
+        e.preventDefault();
+        slot.classList.remove("drag-over");
+        const postId = e.dataTransfer.getData("text/plain");
+        if (!postId) return;
+        const [y, m, d] = slot.dataset.date.split("-").map(Number);
+        const updated = new Date(y, m - 1, d, Number(slot.dataset.hour), 0);
+        reschedulePost(postId, updated);
+      });
+
+      grid.appendChild(slot);
+    });
+  }
+}
+
+function priorityPill(priority) {
+  const p = priority || "normal";
+  return `<span class="priority-pill priority-${escapeHtml(p)}">${escapeHtml(PRIORITY_LABELS[p] || p)}</span>`;
+}
+
+function sourcePill(source) {
+  if (source !== "ai") return "";
+  return `<span class="source-pill">AI</span>`;
+}
+
 function postActionButtons(post) {
   const editable = ["draft", "scheduled", "failed"].includes(post.status);
   const cancelable = ["draft", "scheduled", "failed"].includes(post.status);
   const retryable = post.status === "failed";
+  const archivable = ["draft", "scheduled", "failed", "cancelled"].includes(post.status);
+  const isArchived = post.status === "archived";
   const deletable = post.status !== "processing";
   return [
     editable
@@ -711,6 +1023,18 @@ function postActionButtons(post) {
       : "",
     retryable
       ? `<button type="button" class="btn btn-outline-glow btn-sm" data-retry-post="${post.id}">Retry</button>`
+      : "",
+    !isArchived
+      ? `<button type="button" class="btn btn-outline-glow btn-sm" data-duplicate-post="${post.id}">Duplicate</button>`
+      : "",
+    !isArchived
+      ? `<button type="button" class="btn btn-outline-glow btn-sm" data-clone-series-post="${post.id}">Clone series</button>`
+      : "",
+    archivable
+      ? `<button type="button" class="btn btn-outline-glow btn-sm" data-archive-post="${post.id}">Archive</button>`
+      : "",
+    isArchived
+      ? `<button type="button" class="btn btn-outline-glow btn-sm" data-restore-post="${post.id}">Restore</button>`
       : "",
     deletable
       ? `<button type="button" class="btn btn-outline-glow btn-sm danger" data-delete-post="${post.id}">Delete</button>`
@@ -723,7 +1047,7 @@ function renderScheduledList() {
   const empty = document.getElementById("scheduled-empty");
   if (!list) return;
 
-  const posts = [...cachedPosts].sort(
+  const posts = filteredPosts().sort(
     (a, b) => new Date(a.scheduledAt || a.datetime) - new Date(b.scheduledAt || b.datetime)
   );
   list.innerHTML = "";
@@ -750,7 +1074,7 @@ function renderScheduledList() {
     li.innerHTML = `
       <div class="scheduled-post-main">
         <span class="platform-pill platform-${escapeHtml(post.platform)}">${escapeHtml(PLATFORM_LABELS[post.platform] || post.platform)}</span>
-        ${statusBadge(post.status)}
+        ${statusBadge(post.status)} ${priorityPill(post.priority)} ${sourcePill(post.source)}
         <strong>${escapeHtml(caption.slice(0, 90))}${caption.length > 90 ? "…" : ""}</strong>
         <small>${escapeHtml(when)}</small>
         ${err}
@@ -767,7 +1091,7 @@ function renderPublishQueue() {
   const counts = document.getElementById("queue-counts");
   if (!list) return;
 
-  const queue = cachedPosts
+  let queue = filteredPosts()
     .filter((p) => ["scheduled", "processing", "failed"].includes(p.status))
     .sort((a, b) => new Date(a.scheduledAt || a.datetime) - new Date(b.scheduledAt || b.datetime));
 
@@ -778,9 +1102,19 @@ function renderPublishQueue() {
     counts.textContent = `${scheduled} scheduled · ${processing} processing · ${failed} failed`;
   }
 
+  if (queueSubTab === "retry") {
+    queue = queue.filter((p) => p.status === "failed" && (p.attemptCount || 0) < (p.maxAttempts || 3));
+  }
+
   list.innerHTML = "";
   if (!queue.length) {
-    if (empty) empty.hidden = false;
+    if (empty) {
+      empty.hidden = false;
+      empty.textContent =
+        queueSubTab === "retry"
+          ? "No failed posts waiting to retry."
+          : "Queue is empty. Schedule a post to enqueue it.";
+    }
     return;
   }
   if (empty) empty.hidden = true;
@@ -795,12 +1129,17 @@ function renderPublishQueue() {
       minute: "2-digit"
     });
     const caption = post.caption || post.content || "";
+    const spacingHint =
+      post.status === "failed"
+        ? ""
+        : `<small class="attempts-remaining">${(post.maxAttempts || 3) - (post.attemptCount || 0)} attempt(s) remaining</small>`;
     li.innerHTML = `
       <div class="scheduled-post-main">
         <span class="platform-pill platform-${escapeHtml(post.platform)}">${escapeHtml(PLATFORM_LABELS[post.platform] || post.platform)}</span>
-        ${statusBadge(post.status)}
+        ${statusBadge(post.status)} ${priorityPill(post.priority)} ${sourcePill(post.source)}
         <strong>${escapeHtml(caption.slice(0, 90))}${caption.length > 90 ? "…" : ""}</strong>
         <small>Due ${escapeHtml(when)} · attempts ${post.attemptCount || 0}/${post.maxAttempts || 3}</small>
+        ${spacingHint}
         ${post.errorMessage ? `<small class="post-error">${escapeHtml(post.errorMessage)}</small>` : ""}
       </div>
       <div class="scheduled-post-actions">${postActionButtons(post)}</div>`;
@@ -815,7 +1154,7 @@ function renderPublishHistory() {
   const counts = document.getElementById("history-counts");
   if (!list) return;
 
-  const history = cachedPosts
+  const history = filteredPosts()
     .filter((p) => p.status === "published" || p.status === "failed")
     .sort(
       (a, b) =>
@@ -848,7 +1187,7 @@ function renderPublishHistory() {
     li.innerHTML = `
       <div class="scheduled-post-main">
         <span class="platform-pill platform-${escapeHtml(post.platform)}">${escapeHtml(PLATFORM_LABELS[post.platform] || post.platform)}</span>
-        ${statusBadge(post.status)}
+        ${statusBadge(post.status)} ${priorityPill(post.priority)} ${sourcePill(post.source)}
         <strong>${escapeHtml(caption.slice(0, 90))}${caption.length > 90 ? "…" : ""}</strong>
         <small>${escapeHtml(detail)}</small>
       </div>
@@ -906,53 +1245,587 @@ function bindPostActions(root) {
       }
     });
   });
+  root.querySelectorAll("[data-duplicate-post]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        await AlphaAPI.api(`/api/posts/${btn.getAttribute("data-duplicate-post")}/duplicate`, {
+          method: "POST"
+        });
+        showToast("Duplicated as a new draft");
+        await refreshAllData();
+      } catch (err) {
+        showToast(err.message || "Duplicate failed.", "error");
+      }
+    });
+  });
+  root.querySelectorAll("[data-clone-series-post]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const idInput = document.getElementById("clone-series-post-id");
+      if (idInput) idInput.value = btn.getAttribute("data-clone-series-post");
+      openModal("clone-series-modal");
+    });
+  });
+  root.querySelectorAll("[data-archive-post]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute("data-archive-post");
+      try {
+        await AlphaAPI.api(`/api/posts/${id}/archive`, { method: "POST" });
+        await refreshAllData();
+        showUndoToast("Post archived", async () => {
+          try {
+            await AlphaAPI.api(`/api/posts/${id}/restore`, { method: "POST" });
+            showToast("Post restored");
+            await refreshAllData();
+          } catch (err) {
+            showToast(err.message || "Restore failed.", "error");
+          }
+        });
+      } catch (err) {
+        showToast(err.message || "Archive failed.", "error");
+      }
+    });
+  });
+  root.querySelectorAll("[data-restore-post]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        await AlphaAPI.api(`/api/posts/${btn.getAttribute("data-restore-post")}/restore`, {
+          method: "POST"
+        });
+        showToast("Post restored");
+        await refreshAllData();
+      } catch (err) {
+        showToast(err.message || "Restore failed.", "error");
+      }
+    });
+  });
+}
+
+function initCloneSeriesModal() {
+  document.getElementById("clone-series-confirm-btn")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const postId = document.getElementById("clone-series-post-id")?.value;
+    const count = Number(document.getElementById("clone-series-count")?.value || 3);
+    const intervalValue = Number(document.getElementById("clone-series-interval-value")?.value || 1);
+    const intervalUnit = document.getElementById("clone-series-interval-unit")?.value || "day";
+    if (!postId) return;
+    setButtonLoading(btn, true);
+    try {
+      const data = await AlphaAPI.api(`/api/posts/${postId}/clone-series`, {
+        method: "POST",
+        body: { count, intervalValue, intervalUnit }
+      });
+      showToast(`Created a ${data.posts?.length || count}-post series`);
+      closeModal("clone-series-modal");
+      await refreshAllData();
+    } catch (err) {
+      showToast(err.message || "Clone series failed.", "error");
+    } finally {
+      setButtonLoading(btn, false);
+    }
+  });
+}
+
+let modalMediaAssets = [];
+let modalContentBoxResult = null;
+let modalContentBoxActiveKey = "caption";
+let modalScoreTimer = null;
+let modalPreviewPlatform = "";
+
+function renderPlatformCheckboxes(selected = [], { locked = false } = {}) {
+  const grid = document.getElementById("post-platforms-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  SCHEDULER_PLATFORMS.forEach((p) => {
+    const checked = selected.includes(p);
+    const label = document.createElement("label");
+    label.className = "platform-checkbox";
+    label.innerHTML = `<input type="checkbox" value="${p}" ${checked ? "checked" : ""} ${locked ? "disabled" : ""}> ${escapeHtml(PLATFORM_LABELS[p] || p)}`;
+    label.querySelector("input").addEventListener("change", onPlatformSelectionChanged);
+    grid.appendChild(label);
+  });
+  const lockedHint = document.getElementById("post-platforms-locked-hint");
+  if (lockedHint) lockedHint.hidden = !locked;
+}
+
+function getSelectedPlatforms() {
+  return Array.from(document.querySelectorAll("#post-platforms-grid input:checked")).map((i) => i.value);
+}
+
+function onPlatformSelectionChanged() {
+  hideError("platform-error");
+  updateMediaFieldHint();
+  renderPlatformPreviewTabs();
+  scheduleWarningsAndScoreRefresh();
+}
+
+function updateMediaFieldHint() {
+  const platforms = getSelectedPlatforms();
+  const hint = document.getElementById("post-media-hint");
+  if (hint) {
+    hint.textContent = platforms.includes("instagram")
+      ? "Instagram requires at least one public image to publish — upload or generate one below."
+      : "Optional. Instagram publishing requires at least one image.";
+  }
+}
+
+function validMediaForApi() {
+  // Legacy posts created before the media library existed may carry a bare
+  // mediaUrl with no real MediaAsset id — the API's structured `media` field
+  // requires a real assetId, so those fall back to the top-level mediaUrl
+  // field instead of being sent here.
+  return modalMediaAssets.filter((m) => m.assetId);
+}
+
+function assetToMediaItem(asset) {
+  return {
+    assetId: asset.id,
+    url: asset.url,
+    type: asset.type,
+    width: asset.width || null,
+    height: asset.height || null,
+    durationSec: asset.durationSec || null,
+    source: asset.source
+  };
+}
+
+function renderMediaThumbs() {
+  const row = document.getElementById("media-thumb-row");
+  const mediaUrlInput = document.getElementById("post-media-url");
+  if (!row) return;
+  row.innerHTML = "";
+  modalMediaAssets.forEach((asset, idx) => {
+    const thumb = document.createElement("div");
+    thumb.className = "media-thumb";
+    thumb.innerHTML =
+      asset.type === "video"
+        ? `<video src="${escapeHtml(asset.url)}" muted></video>`
+        : `<img src="${escapeHtml(asset.url)}" alt="">`;
+    if (asset.source === "ai-generated") {
+      const badge = document.createElement("span");
+      badge.className = "media-thumb-badge";
+      badge.textContent = "AI";
+      thumb.appendChild(badge);
+    }
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "media-thumb-remove";
+    removeBtn.setAttribute("aria-label", "Remove media");
+    removeBtn.textContent = "×";
+    removeBtn.addEventListener("click", () => {
+      modalMediaAssets.splice(idx, 1);
+      renderMediaThumbs();
+      scheduleWarningsAndScoreRefresh();
+    });
+    thumb.appendChild(removeBtn);
+    row.appendChild(thumb);
+  });
+  if (mediaUrlInput) mediaUrlInput.value = modalMediaAssets[0]?.url || "";
+  hideError("media-error");
+  renderPlatformPreviewFrame();
+}
+
+async function uploadMediaFiles(formData) {
+  const url = window.PA_CONFIG?.api?.("/api/media/upload") || "/api/media/upload";
+  const res = await fetch(url, {
+    method: "POST",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+    body: formData
+  });
+  const text = await res.text();
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = { ok: false, error: text || "Invalid server response." };
+  }
+  if (!res.ok) {
+    const err = new Error(data?.error || `Request failed (${res.status})`);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+function initMediaManager() {
+  const fileInput = document.getElementById("media-file-input");
+  fileInput?.addEventListener("change", async () => {
+    const files = Array.from(fileInput.files || []);
+    if (!files.length) return;
+    const formData = new FormData();
+    files.forEach((f) => formData.append("files", f));
+    try {
+      const data = await uploadMediaFiles(formData);
+      (data.assets || []).forEach((a) => modalMediaAssets.push(assetToMediaItem(a)));
+      renderMediaThumbs();
+      scheduleWarningsAndScoreRefresh();
+      showToast("Media uploaded");
+    } catch (err) {
+      showToast(err.message || "Upload failed.", "error");
+    } finally {
+      fileInput.value = "";
+    }
+  });
+
+  const genRow = document.getElementById("media-generate-prompt-row");
+  document.getElementById("media-generate-btn")?.addEventListener("click", () => {
+    if (genRow) genRow.hidden = !genRow.hidden;
+  });
+
+  document.getElementById("media-generate-confirm")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const promptInput = document.getElementById("media-generate-prompt");
+    const prompt = (promptInput?.value || "").trim();
+    if (prompt.length < 3) {
+      showToast("Describe the image you want first.", "error");
+      return;
+    }
+    setButtonLoading(btn, true);
+    try {
+      const data = await AlphaAPI.api("/api/media/generate-image", { method: "POST", body: { prompt } });
+      modalMediaAssets.push(assetToMediaItem(data.asset));
+      renderMediaThumbs();
+      scheduleWarningsAndScoreRefresh();
+      if (promptInput) promptInput.value = "";
+      if (genRow) genRow.hidden = true;
+      showToast("Image generated");
+    } catch (err) {
+      showToast(err.message || "AI image generation failed.", "error");
+    } finally {
+      setButtonLoading(btn, false);
+    }
+  });
+
+  document.getElementById("media-generate-video-btn")?.addEventListener("click", () => {
+    showToast("AI video generation is coming in a future sprint — upload a video instead.", "info");
+  });
+}
+
+function renderPlatformPreviewTabs() {
+  const tabs = document.getElementById("platform-preview-tabs");
+  if (!tabs) return;
+  const selected = getSelectedPlatforms();
+  tabs.innerHTML = "";
+  if (!selected.length) {
+    modalPreviewPlatform = "";
+    renderPlatformPreviewFrame();
+    return;
+  }
+  if (!selected.includes(modalPreviewPlatform)) modalPreviewPlatform = selected[0];
+  selected.forEach((p) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `platform-preview-tab-btn${p === modalPreviewPlatform ? " active" : ""}`;
+    btn.textContent = PLATFORM_LABELS[p] || p;
+    btn.addEventListener("click", () => {
+      modalPreviewPlatform = p;
+      renderPlatformPreviewTabs();
+    });
+    tabs.appendChild(btn);
+  });
+  renderPlatformPreviewFrame();
+}
+
+function renderPlatformPreviewFrame() {
+  const frame = document.getElementById("platform-preview-frame");
+  if (!frame) return;
+  const caption = document.getElementById("post-content")?.value || "";
+  if (!modalPreviewPlatform) {
+    frame.innerHTML = `<p class="empty-state">Select a platform to preview your post.</p>`;
+    return;
+  }
+  const media = modalMediaAssets[0];
+  const mediaHtml = media
+    ? media.type === "video"
+      ? `<video class="preview-post-media" src="${escapeHtml(media.url)}" controls></video>`
+      : `<img class="preview-post-media" src="${escapeHtml(media.url)}" alt="">`
+    : "";
+  const displayName = currentUser?.name || currentUser?.email || "Your account";
+  frame.innerHTML = `
+    <div class="preview-post-header">
+      <span class="preview-post-avatar">${escapeHtml(displayName.slice(0, 2).toUpperCase())}</span>
+      <div>
+        <strong>${escapeHtml(displayName)}</strong>
+        <div><span class="platform-pill platform-${escapeHtml(modalPreviewPlatform)}">${escapeHtml(PLATFORM_LABELS[modalPreviewPlatform] || modalPreviewPlatform)}</span></div>
+      </div>
+    </div>
+    ${mediaHtml}
+    <p class="preview-post-caption">${caption ? escapeHtml(caption) : "<em>Your caption will appear here…</em>"}</p>`;
+}
+
+function scheduleWarningsAndScoreRefresh() {
+  clearTimeout(modalScoreTimer);
+  modalScoreTimer = setTimeout(() => {
+    refreshAiScore();
+    refreshSmartWarnings();
+  }, 450);
+}
+
+async function refreshAiScore() {
+  const panel = document.getElementById("ai-score-meters");
+  const explanationEl = document.getElementById("ai-score-explanation");
+  if (!panel) return;
+  const platforms = getSelectedPlatforms();
+  const caption = (document.getElementById("post-content")?.value || "").trim();
+  const datetime = document.getElementById("post-datetime")?.value;
+  if (!platforms.length || caption.length < 10 || !datetime) {
+    panel.innerHTML = `<p class="empty-state">Score updates as you fill in the caption, media, and time.</p>`;
+    if (explanationEl) explanationEl.innerHTML = "";
+    return;
+  }
+  try {
+    const data = await AlphaAPI.api("/api/posts/score", {
+      method: "POST",
+      body: {
+        platform: platforms[0],
+        caption,
+        scheduledAt: localInputToIso(datetime),
+        media: validMediaForApi()
+      }
+    });
+    renderAiScore(data.score);
+  } catch (err) {
+    panel.innerHTML = `<p class="empty-state">${escapeHtml(err.message || "Could not calculate score.")}</p>`;
+  }
+}
+
+function renderAiScore(score) {
+  const panel = document.getElementById("ai-score-meters");
+  const explanationEl = document.getElementById("ai-score-explanation");
+  if (!panel || !score) return;
+  const meters = [
+    { label: "Reach", value: score.reachScore },
+    { label: "Engagement", value: score.engagementScore },
+    { label: "Virality", value: score.viralityScore }
+  ];
+  panel.innerHTML = meters
+    .map(
+      (m) => `
+    <div class="ai-score-meter-row">
+      <span class="ai-score-meter-label">${escapeHtml(m.label)}</span>
+      <div class="ai-score-meter-track"><div class="ai-score-meter-fill" style="width:${m.value}%"></div></div>
+      <span class="ai-score-meter-value">${m.value}</span>
+    </div>`
+    )
+    .join("");
+  if (explanationEl) {
+    explanationEl.innerHTML = (score.explanation || []).map((e) => `<li>${escapeHtml(e)}</li>`).join("");
+  }
+}
+
+async function refreshSmartWarnings() {
+  const banner = document.getElementById("schedule-warnings-banner");
+  if (!banner) return;
+  const platforms = getSelectedPlatforms();
+  const caption = (document.getElementById("post-content")?.value || "").trim();
+  const datetime = document.getElementById("post-datetime")?.value;
+  if (!platforms.length || caption.length < 10 || !datetime) {
+    banner.hidden = true;
+    return;
+  }
+  try {
+    const excludePostId = document.getElementById("post-id")?.value || "";
+    const data = await AlphaAPI.api("/api/posts/validate", {
+      method: "POST",
+      body: {
+        platforms,
+        caption,
+        scheduledAt: localInputToIso(datetime),
+        media: validMediaForApi(),
+        ...(excludePostId ? { excludePostId } : {})
+      }
+    });
+    const items = [...(data.blockers || []), ...(data.warnings || [])];
+    if (!items.length) {
+      banner.hidden = true;
+      return;
+    }
+    banner.hidden = false;
+    banner.classList.toggle("blocker", (data.blockers || []).length > 0);
+    banner.innerHTML = `<strong>Smart warnings</strong><ul>${items
+      .map((w) => `<li>${escapeHtml(w.message || String(w))}</li>`)
+      .join("")}</ul>`;
+  } catch {
+    banner.hidden = true;
+  }
+}
+
+const CONTENT_BOX_TABS = [
+  { key: "caption", label: "Original" },
+  { key: "emojiVersion", label: "Emoji" },
+  { key: "professionalVersion", label: "Professional" },
+  { key: "casualVersion", label: "Casual" }
+];
+
+function renderContentBoxResult() {
+  const result = document.getElementById("ai-box-result");
+  const tabsEl = document.getElementById("ai-variant-tabs");
+  const textEl = document.getElementById("ai-variant-text");
+  const hashtagsEl = document.getElementById("ai-variant-hashtags");
+  if (!result || !modalContentBoxResult) return;
+  result.hidden = false;
+  if (tabsEl) {
+    tabsEl.innerHTML = "";
+    CONTENT_BOX_TABS.forEach((tab) => {
+      if (!modalContentBoxResult[tab.key]) return;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `ai-variant-tab-btn${tab.key === modalContentBoxActiveKey ? " active" : ""}`;
+      btn.textContent = tab.label;
+      btn.addEventListener("click", () => {
+        modalContentBoxActiveKey = tab.key;
+        renderContentBoxResult();
+      });
+      tabsEl.appendChild(btn);
+    });
+  }
+  if (textEl) textEl.textContent = modalContentBoxResult[modalContentBoxActiveKey] || modalContentBoxResult.caption || "";
+  if (hashtagsEl) hashtagsEl.textContent = modalContentBoxResult.hashtags || "";
+}
+
+function initAiContentBox() {
+  document.getElementById("ai-box-generate")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const promptInput = document.getElementById("ai-box-prompt");
+    const prompt = (promptInput?.value || "").trim();
+    const platforms = getSelectedPlatforms();
+    if (prompt.length < 3) {
+      showToast("Enter a short prompt first.", "error");
+      return;
+    }
+    if (!platforms.length) {
+      showToast("Select at least one platform first.", "error");
+      return;
+    }
+    setButtonLoading(btn, true);
+    try {
+      const data = await AlphaAPI.api("/api/scheduler/ai/content-box", {
+        method: "POST",
+        body: { platform: platforms[0], prompt }
+      });
+      modalContentBoxResult = data;
+      modalContentBoxActiveKey = "caption";
+      renderContentBoxResult();
+    } catch (err) {
+      showToast(err.message || "AI content generation failed.", "error");
+    } finally {
+      setButtonLoading(btn, false);
+    }
+  });
+
+  document.getElementById("ai-box-insert")?.addEventListener("click", () => {
+    if (!modalContentBoxResult) return;
+    const content = document.getElementById("post-content");
+    const count = document.getElementById("content-count");
+    const text = modalContentBoxResult[modalContentBoxActiveKey] || modalContentBoxResult.caption || "";
+    const hashtags = modalContentBoxResult.hashtags || "";
+    if (content) {
+      content.value = hashtags ? `${text}\n\n${hashtags}` : text;
+      if (count) count.textContent = String(content.value.length);
+    }
+    const sourceInput = document.getElementById("post-source");
+    if (sourceInput) sourceInput.value = "ai";
+    renderPlatformPreviewFrame();
+    scheduleWarningsAndScoreRefresh();
+    showToast("Inserted into caption");
+  });
+}
+
+function initSmartTimeButton() {
+  document.getElementById("smart-time-btn")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    const platforms = getSelectedPlatforms();
+    if (!platforms.length) {
+      showToast("Select at least one platform first.", "error");
+      return;
+    }
+    setButtonLoading(btn, true);
+    try {
+      const data = await AlphaAPI.api(
+        `/api/posts/smart-time?platform=${encodeURIComponent(platforms[0])}`
+      );
+      const now = new Date();
+      const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), data.bestHour, 0, 0, 0);
+      if (target <= now) target.setDate(target.getDate() + 1);
+      const datetime = document.getElementById("post-datetime");
+      if (datetime) datetime.value = toLocalInput(target);
+      const hint = document.getElementById("smart-time-hint");
+      if (hint) hint.textContent = `Suggested ${data.bestHourLabel || data.bestHour + ":00"} — ${data.basis || "heuristic"}`;
+      scheduleWarningsAndScoreRefresh();
+    } catch (err) {
+      showToast(err.message || "Could not fetch smart time.", "error");
+    } finally {
+      setButtonLoading(btn, false);
+    }
+  });
 }
 
 function openScheduleModal(post = null) {
   const form = document.getElementById("schedule-form");
   const title = document.getElementById("schedule-modal-title");
   const idInput = document.getElementById("post-id");
+  const groupIdInput = document.getElementById("post-group-id");
+  const sourceInput = document.getElementById("post-source");
   const content = document.getElementById("post-content");
-  const platform = document.getElementById("post-platform");
   const datetime = document.getElementById("post-datetime");
-  const mediaUrl = document.getElementById("post-media-url");
+  const priority = document.getElementById("post-priority");
   const count = document.getElementById("content-count");
   const success = document.getElementById("schedule-success");
+  const warningsBanner = document.getElementById("schedule-warnings-banner");
+  const smartTimeHint = document.getElementById("smart-time-hint");
   if (success) success.hidden = true;
+  if (warningsBanner) warningsBanner.hidden = true;
+  if (smartTimeHint) smartTimeHint.textContent = "";
   ["content-error", "platform-error", "datetime-error", "media-error"].forEach(hideError);
 
   const minDate = new Date();
   minDate.setMinutes(minDate.getMinutes() - minDate.getTimezoneOffset());
   if (datetime) datetime.min = minDate.toISOString().slice(0, 16);
 
+  modalContentBoxResult = null;
+  const boxResult = document.getElementById("ai-box-result");
+  if (boxResult) boxResult.hidden = true;
+  const boxPrompt = document.getElementById("ai-box-prompt");
+  if (boxPrompt) boxPrompt.value = "";
+
   if (post) {
     if (title) title.textContent = "Edit scheduled post";
     if (idInput) idInput.value = post.id;
+    if (groupIdInput) groupIdInput.value = post.groupId || "";
+    if (sourceInput) sourceInput.value = post.source || "manual";
     if (content) content.value = post.caption || post.content || "";
-    if (platform) platform.value = post.platform || "";
     if (datetime) datetime.value = post.datetime || toLocalInput(post.scheduledAt);
-    if (mediaUrl) mediaUrl.value = post.mediaUrl || "";
+    if (priority) priority.value = post.priority || "normal";
+    modalMediaAssets = Array.isArray(post.media) && post.media.length
+      ? post.media.map((m) => ({ ...m }))
+      : post.mediaUrl
+        ? [{ assetId: "", url: post.mediaUrl, type: "image", width: null, height: null, durationSec: null }]
+        : [];
+    modalPreviewPlatform = "";
+    renderPlatformCheckboxes([post.platform], { locked: true });
   } else {
     if (title) title.textContent = "Create scheduled post";
     form?.reset();
     if (idInput) idInput.value = "";
+    if (groupIdInput) groupIdInput.value = "";
+    if (sourceInput) sourceInput.value = "manual";
+    if (priority) priority.value = "normal";
+    modalMediaAssets = [];
+    modalPreviewPlatform = "";
+    renderPlatformCheckboxes([]);
   }
   if (count) count.textContent = String((content?.value || "").length);
   updateMediaFieldHint();
+  renderMediaThumbs();
+  renderPlatformPreviewTabs();
+  refreshAiScore();
+  refreshSmartWarnings();
   openModal("schedule-modal");
-}
-
-function updateMediaFieldHint() {
-  const platform = document.getElementById("post-platform")?.value;
-  const req = document.getElementById("post-media-required");
-  const hint = document.getElementById("post-media-hint");
-  if (req) req.hidden = platform !== "instagram";
-  if (hint) {
-    hint.textContent =
-      platform === "instagram"
-        ? "Required for Instagram — must be a publicly reachable image URL."
-        : "Optional for Facebook (used as a link attachment).";
-  }
 }
 
 function toLocalInput(value) {
@@ -970,7 +1843,6 @@ function initScheduleForm() {
   const form = document.getElementById("schedule-form");
   if (!form) return;
   const content = document.getElementById("post-content");
-  const platform = document.getElementById("post-platform");
   const datetime = document.getElementById("post-datetime");
   const mediaUrl = document.getElementById("post-media-url");
   const count = document.getElementById("content-count");
@@ -978,17 +1850,26 @@ function initScheduleForm() {
   const draftBtn = document.getElementById("schedule-save-draft");
   const success = document.getElementById("schedule-success");
   const idInput = document.getElementById("post-id");
+  const priority = document.getElementById("post-priority");
+  const sourceInput = document.getElementById("post-source");
+
+  initMediaManager();
+  initAiContentBox();
+  initSmartTimeButton();
+  document.getElementById("ai-score-refresh")?.addEventListener("click", () => refreshAiScore());
 
   content?.addEventListener("input", () => {
     if (count) count.textContent = String(content.value.length);
     hideError("content-error");
     content.classList.remove("invalid");
+    renderPlatformPreviewFrame();
+    scheduleWarningsAndScoreRefresh();
   });
 
-  platform?.addEventListener("change", () => {
-    updateMediaFieldHint();
-    hideError("media-error");
-    mediaUrl?.classList.remove("invalid");
+  datetime?.addEventListener("change", () => {
+    hideError("datetime-error");
+    datetime.classList.remove("invalid");
+    scheduleWarningsAndScoreRefresh();
   });
 
   const isPublicHttpUrl = (value) => {
@@ -1000,9 +1881,9 @@ function initScheduleForm() {
     }
   };
 
-  const validateBase = ({ requireFutureTime, status }) => {
+  const validateBase = ({ requireFutureTime, status, platforms }) => {
     ["content-error", "platform-error", "datetime-error", "media-error"].forEach(hideError);
-    [content, platform, datetime, mediaUrl].forEach((el) => el?.classList.remove("invalid"));
+    [content, datetime, mediaUrl].forEach((el) => el?.classList.remove("invalid"));
     let valid = true;
     const contentVal = (content?.value || "").trim();
     if (contentVal.length < 10) {
@@ -1010,9 +1891,8 @@ function initScheduleForm() {
       content?.classList.add("invalid");
       valid = false;
     }
-    if (!platform?.value) {
+    if (!platforms.length) {
       showError("platform-error");
-      platform?.classList.add("invalid");
       valid = false;
     }
     if (requireFutureTime) {
@@ -1022,9 +1902,8 @@ function initScheduleForm() {
         valid = false;
       }
     }
-    if (status === "scheduled" && platform?.value === "instagram" && !isPublicHttpUrl(mediaUrl?.value)) {
+    if (status === "scheduled" && platforms.includes("instagram") && !isPublicHttpUrl(mediaUrl?.value)) {
       showError("media-error");
-      mediaUrl?.classList.add("invalid");
       valid = false;
     }
     return valid;
@@ -1032,18 +1911,23 @@ function initScheduleForm() {
 
   const savePost = async ({ status, button }) => {
     if (success) success.hidden = true;
+    const platforms = getSelectedPlatforms();
     const requireFutureTime = status === "scheduled";
-    if (!validateBase({ requireFutureTime, status })) {
+    if (!validateBase({ requireFutureTime, status, platforms })) {
       showToast("Please fix the highlighted fields.", "error");
       return;
     }
 
     const payload = {
-      platform: platform.value,
       caption: (content?.value || "").trim(),
-      mediaUrl: (mediaUrl?.value || "").trim(),
-      status
+      status,
+      priority: priority?.value || "normal",
+      source: sourceInput?.value || "manual",
+      media: validMediaForApi()
     };
+    if (platforms.length > 1) payload.platforms = platforms;
+    else payload.platform = platforms[0];
+    if ((mediaUrl?.value || "").trim()) payload.mediaUrl = mediaUrl.value.trim();
     if (datetime?.value) payload.scheduledAt = localInputToIso(datetime.value);
 
     setButtonLoading(button, true);
@@ -1053,12 +1937,18 @@ function initScheduleForm() {
         await AlphaAPI.api(`/api/posts/${editingId}`, { method: "PUT", body: payload });
         showToast(status === "draft" ? "Draft updated" : "Scheduled post updated");
       } else {
-        await AlphaAPI.api("/api/posts", { method: "POST", body: payload });
-        showToast(
-          status === "draft"
-            ? "Draft saved"
-            : `Scheduled for ${PLATFORM_LABELS[payload.platform]}`
-        );
+        const data = await AlphaAPI.api("/api/posts", { method: "POST", body: payload });
+        if ((data.warnings || []).length) {
+          showToast(`Saved with ${data.warnings.length} smart warning(s) — open the post to review.`, "info");
+        } else {
+          showToast(
+            status === "draft"
+              ? "Draft saved"
+              : platforms.length > 1
+                ? `Scheduled for ${platforms.length} platforms`
+                : `Scheduled for ${PLATFORM_LABELS[platforms[0]] || platforms[0]}`
+          );
+        }
       }
       if (success) success.hidden = false;
       await refreshAllData();
@@ -1068,10 +1958,15 @@ function initScheduleForm() {
         if (idInput) idInput.value = "";
         if (count) count.textContent = "0";
         if (success) success.hidden = true;
-        updateMediaFieldHint();
+        modalMediaAssets = [];
+        renderMediaThumbs();
       }, 500);
     } catch (err) {
-      showToast(err.message || "Could not save post.", "error");
+      if (err.status === 409) {
+        showToast(`${err.message} Adjust the time to resolve the conflict.`, "error");
+      } else {
+        showToast(err.message || "Could not save post.", "error");
+      }
     } finally {
       setButtonLoading(button, false);
     }

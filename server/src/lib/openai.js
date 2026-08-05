@@ -1,3 +1,4 @@
+import fs from "fs";
 import OpenAI from "openai";
 import { config } from "../config.js";
 
@@ -138,5 +139,54 @@ export async function generateSocialContent(input) {
     throw safe;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/**
+ * Sprint 12 — Viral Clip AI: real OpenAI Whisper transcription. Additive export —
+ * does not modify generateSocialContent() or the existing text-generation path above.
+ * Returns the real segment-level timestamps Whisper provides (verbose_json), used to
+ * ground moment detection in actual spoken words rather than fabricated timing.
+ */
+export async function transcribeAudioFile(filePath, { language } = {}) {
+  const client = createOpenAIClient();
+  try {
+    const response = await client.audio.transcriptions.create({
+      file: fs.createReadStream(filePath),
+      model: config.clipAi.whisperModel,
+      response_format: "verbose_json",
+      ...(language ? { language } : {})
+    });
+    const segments = Array.isArray(response.segments)
+      ? response.segments.map((seg) => ({
+          start: Number(seg.start) || 0,
+          end: Number(seg.end) || 0,
+          text: String(seg.text || "").trim()
+        }))
+      : [];
+    return {
+      language: response.language || language || "",
+      text: String(response.text || "").trim(),
+      segments
+    };
+  } catch (err) {
+    if (err?.status === 401 || err?.code === "invalid_api_key") {
+      const e = new Error("AI transcription configuration error. Contact support.");
+      e.status = 503;
+      throw e;
+    }
+    if (err?.status === 429) {
+      const e = new Error("AI transcription rate limit reached. Please wait and try again.");
+      e.status = 429;
+      throw e;
+    }
+    if (err?.status === 413) {
+      const e = new Error("Audio chunk too large for transcription.");
+      e.status = 413;
+      throw e;
+    }
+    const e = new Error("AI transcription failed. Please try again.");
+    e.status = 502;
+    throw e;
   }
 }

@@ -1,18 +1,23 @@
+import crypto from "crypto";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requirePaidAccess } from "../lib/entitlements.js";
 import { logActivity, serializeActivity } from "../lib/activity.js";
+import { PRIORITIES, findSpacingConflict, spacingErrorMessage } from "../lib/scheduling/spacing.js";
+import { buildSmartWarnings } from "../lib/scheduling/warnings.js";
+import { computeHeuristicScore, suggestSmartTime } from "../lib/scheduling/aiScore.js";
 
 const router = Router();
 
-const STATUSES = ["draft", "scheduled", "processing", "published", "failed", "cancelled"];
+const STATUSES = ["draft", "scheduled", "processing", "published", "failed", "cancelled", "archived"];
 const EDITABLE = new Set(["draft", "scheduled", "failed"]);
 const CANCELABLE = new Set(["draft", "scheduled", "failed"]);
 const RETRYABLE = new Set(["failed"]);
+const ARCHIVABLE = new Set(["draft", "scheduled", "failed", "cancelled"]);
 
-const platforms = ["instagram", "facebook", "linkedin", "x", "youtube"];
+const platforms = ["instagram", "facebook", "linkedin", "x", "youtube", "tiktok", "pinterest"];
 const META_LIVE_PLATFORMS = new Set(["instagram", "facebook"]);
 
 async function assertConnectionForSchedule(userId, platform, { mediaUrl = "", status = "scheduled" } = {}) {
@@ -53,21 +58,92 @@ async function assertConnectionForSchedule(userId, platform, { mediaUrl = "", st
   return connection;
 }
 
-const postSchema = z.object({
-  platform: z.enum(platforms, { errorMap: () => ({ message: "Select a valid platform." }) }),
+const mediaItemSchema = z.object({
+  assetId: z.string().min(1),
+  url: z.string().min(1),
+  type: z.enum(["image", "video"]),
+  width: z.number().nullable().optional(),
+  height: z.number().nullable().optional(),
+  durationSec: z.number().nullable().optional()
+});
+
+const basePostFields = {
   caption: z.string().trim().min(10, "Caption must be at least 10 characters.").max(2200),
   scheduledAt: z.string().datetime({ offset: true }).or(z.string().min(1)).optional(),
   mediaUrl: z.string().url().optional().or(z.literal("")).optional(),
-  status: z.enum(["draft", "scheduled"]).optional()
+  media: z.array(mediaItemSchema).max(10).optional(),
+  status: z.enum(["draft", "scheduled"]).optional(),
+  priority: z.enum(PRIORITIES).optional(),
+  source: z.enum(["manual", "ai"]).optional(),
+  force: z.boolean().optional()
+};
+
+const postSchema = z
+  .object({
+    platform: z.enum(platforms, { errorMap: () => ({ message: "Select a valid platform." }) }).optional(),
+    platforms: z.array(z.enum(platforms)).min(1).max(platforms.length).optional(),
+    ...basePostFields
+  })
+  .refine((data) => Boolean(data.platform) || (data.platforms && data.platforms.length > 0), {
+    message: "Select at least one platform.",
+    path: ["platform"]
+  });
+
+const validateSchema = z
+  .object({
+    platform: z.enum(platforms).optional(),
+    platforms: z.array(z.enum(platforms)).min(1).optional(),
+    caption: z.string().trim().min(1).max(2200),
+    scheduledAt: z.string().min(1).optional(),
+    media: z.array(mediaItemSchema).max(10).optional(),
+    excludePostId: z.string().optional()
+  })
+  .refine((data) => Boolean(data.platform) || (data.platforms && data.platforms.length > 0), {
+    message: "Select at least one platform.",
+    path: ["platform"]
+  });
+
+const scoreSchema = z.object({
+  platform: z.enum(platforms),
+  caption: z.string().trim().min(1).max(2200),
+  scheduledAt: z.string().min(1),
+  media: z.array(mediaItemSchema).max(10).optional(),
+  timezone: z.string().optional()
 });
 
+const cloneSeriesSchema = z.object({
+  count: z.number().int().min(1).max(20),
+  intervalUnit: z.enum(["day", "week"]).default("day"),
+  intervalValue: z.number().int().min(1).max(30).default(1)
+});
+
+function parseMediaJson(raw) {
+  try {
+    const parsed = JSON.parse(raw || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseAiScoreJson(raw) {
+  try {
+    const parsed = JSON.parse(raw || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 function serializePost(post) {
+  const media = parseMediaJson(post.mediaJson);
   return {
     id: post.id,
     platform: post.platform,
     caption: post.caption,
     content: post.caption,
-    mediaUrl: post.mediaUrl || "",
+    mediaUrl: post.mediaUrl || (media[0]?.url ?? ""),
+    media,
     scheduledAt: post.scheduledAt.toISOString(),
     datetime: toLocalInputValue(post.scheduledAt),
     status: post.status,
@@ -77,6 +153,11 @@ function serializePost(post) {
     lastAttemptAt: post.lastAttemptAt ? post.lastAttemptAt.toISOString() : null,
     publishedAt: post.publishedAt ? post.publishedAt.toISOString() : null,
     externalPostId: post.externalPostId || "",
+    priority: post.priority || "normal",
+    source: post.source || "manual",
+    groupId: post.groupId || "",
+    previousStatus: post.previousStatus || "",
+    aiScore: parseAiScoreJson(post.aiScoreJson),
     createdAt: post.createdAt.toISOString(),
     updatedAt: post.updatedAt.toISOString()
   };
@@ -102,6 +183,11 @@ function defaultDraftSchedule() {
   return d;
 }
 
+function primaryMediaUrl(mediaArr, fallback) {
+  if (Array.isArray(mediaArr) && mediaArr.length) return mediaArr[0].url;
+  return fallback || "";
+}
+
 router.get("/", requireAuth, async (req, res, next) => {
   try {
     const where = { userId: req.user.id };
@@ -111,10 +197,20 @@ router.get("/", requireAuth, async (req, res, next) => {
         return res.status(400).json({ ok: false, error: "Invalid status filter." });
       }
       where.status = status;
+    } else if (String(req.query.includeArchived || "") !== "1") {
+      where.status = { not: "archived" };
     }
     if (String(req.query.upcoming || "") === "1") {
       where.status = { in: ["scheduled", "processing"] };
       where.scheduledAt = { gte: new Date() };
+    }
+    const platformFilter = String(req.query.platform || "").trim();
+    if (platformFilter && platforms.includes(platformFilter)) {
+      where.platform = platformFilter;
+    }
+    const sourceFilter = String(req.query.source || "").trim();
+    if (sourceFilter === "ai" || sourceFilter === "manual") {
+      where.source = sourceFilter;
     }
 
     const posts = await prisma.scheduledPost.findMany({
@@ -233,6 +329,89 @@ router.get("/founder-stats", requireAuth, async (req, res, next) => {
   }
 });
 
+/** Heuristic best-hour suggestion for a platform (see lib/scheduling/aiScore.js). */
+router.get("/smart-time", requireAuth, async (req, res, next) => {
+  try {
+    const platform = String(req.query.platform || "");
+    if (!platforms.includes(platform)) {
+      return res.status(400).json({ ok: false, error: "Select a valid platform." });
+    }
+    const timezone = String(req.query.timezone || req.user.timezone || "UTC");
+    const result = await suggestSmartTime({ userId: req.user.id, platform, timezone });
+    return res.json({ ok: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Heuristic AI Score for a caption/platform/time combo (dry-run, not persisted). */
+router.post("/score", requireAuth, async (req, res, next) => {
+  try {
+    const parsed = scoreSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ ok: false, error: parsed.error.issues[0]?.message || "Invalid request." });
+    }
+    const scheduledAt = parseScheduleDate(parsed.data.scheduledAt) || new Date();
+    const timezone = parsed.data.timezone || req.user.timezone || "UTC";
+    const result = await computeHeuristicScore({
+      userId: req.user.id,
+      platform: parsed.data.platform,
+      caption: parsed.data.caption,
+      scheduledAt,
+      mediaJson: parsed.data.media || [],
+      timezone
+    });
+    return res.json({ ok: true, score: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Dry-run validation: smart warnings + spacing/connection blockers, nothing persisted. */
+router.post("/validate", requireAuth, async (req, res, next) => {
+  try {
+    const parsed = validateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ ok: false, error: parsed.error.issues[0]?.message || "Invalid request." });
+    }
+    const data = parsed.data;
+    const platformList = data.platforms?.length ? data.platforms : [data.platform];
+    const scheduledAt = parseScheduleDate(data.scheduledAt) || new Date();
+
+    const warnings = [];
+    const blockers = [];
+
+    for (const platform of platformList) {
+      const platformWarnings = await buildSmartWarnings({
+        userId: req.user.id,
+        platform,
+        caption: data.caption,
+        mediaJson: data.media || [],
+        excludePostId: data.excludePostId || null
+      });
+      warnings.push(...platformWarnings.map((w) => ({ ...w, platform })));
+
+      const conflict = await findSpacingConflict({
+        userId: req.user.id,
+        platform,
+        scheduledAt,
+        excludePostId: data.excludePostId || null
+      });
+      if (conflict) {
+        blockers.push({
+          code: "spacing_conflict",
+          platform,
+          message: spacingErrorMessage(conflict)
+        });
+      }
+    }
+
+    return res.json({ ok: true, warnings, blockers });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post("/", requireAuth, async (req, res, next) => {
   try {
     const parsed = postSchema.safeParse(req.body);
@@ -243,8 +422,12 @@ router.post("/", requireAuth, async (req, res, next) => {
       });
     }
 
-    const saveAs = parsed.data.status || "scheduled";
-    let scheduledAt = parseScheduleDate(parsed.data.scheduledAt);
+    const data = parsed.data;
+    const platformList = data.platforms?.length ? [...new Set(data.platforms)] : [data.platform];
+    const saveAs = data.status || "scheduled";
+    let scheduledAt = parseScheduleDate(data.scheduledAt);
+    const mediaArr = data.media || [];
+    const mediaUrl = primaryMediaUrl(mediaArr, data.mediaUrl);
 
     if (saveAs === "draft") {
       if (!scheduledAt) scheduledAt = defaultDraftSchedule();
@@ -263,38 +446,86 @@ router.post("/", requireAuth, async (req, res, next) => {
       }
     }
 
-    try {
-      await assertConnectionForSchedule(req.user.id, parsed.data.platform, {
-        mediaUrl: parsed.data.mediaUrl || "",
-        status: saveAs
-      });
-    } catch (err) {
-      return res.status(err.status || 400).json({ ok: false, error: err.message });
+    // Pre-flight check every platform before creating any rows (all-or-nothing fan-out).
+    for (const platform of platformList) {
+      try {
+        await assertConnectionForSchedule(req.user.id, platform, { mediaUrl, status: saveAs });
+      } catch (err) {
+        return res.status(err.status || 400).json({ ok: false, error: `${platform}: ${err.message}` });
+      }
+
+      if (saveAs === "scheduled" && !data.force) {
+        const conflict = await findSpacingConflict({ userId: req.user.id, platform, scheduledAt });
+        if (conflict) {
+          return res.status(409).json({
+            ok: false,
+            error: spacingErrorMessage(conflict),
+            code: "SPACING_CONFLICT",
+            platform
+          });
+        }
+      }
     }
 
-    const post = await prisma.scheduledPost.create({
-      data: {
+    const groupId = platformList.length > 1 ? crypto.randomUUID() : "";
+    const timezone = req.user.timezone || "UTC";
+    const priority = data.priority || "normal";
+    const source = data.source || "manual";
+
+    const created = [];
+    for (const platform of platformList) {
+      const aiScore = await computeHeuristicScore({
         userId: req.user.id,
-        platform: parsed.data.platform,
-        caption: parsed.data.caption,
-        mediaUrl: parsed.data.mediaUrl || "",
+        platform,
+        caption: data.caption,
         scheduledAt,
-        status: saveAs
-      }
-    });
+        mediaJson: mediaArr,
+        timezone
+      });
 
-    await logActivity({
+      const post = await prisma.scheduledPost.create({
+        data: {
+          userId: req.user.id,
+          platform,
+          caption: data.caption,
+          mediaUrl,
+          mediaJson: JSON.stringify(mediaArr),
+          scheduledAt,
+          status: saveAs,
+          priority,
+          source,
+          groupId,
+          aiScoreJson: JSON.stringify(aiScore)
+        }
+      });
+      created.push(post);
+
+      await logActivity({
+        userId: req.user.id,
+        postId: post.id,
+        type: saveAs === "draft" ? "draft" : "schedule",
+        message:
+          saveAs === "draft"
+            ? `Saved ${post.platform} post draft`
+            : `Scheduled ${post.platform} post`,
+        meta: { platform: post.platform, status: post.status, scheduledAt: post.scheduledAt.toISOString(), groupId }
+      });
+    }
+
+    const warnings = await buildSmartWarnings({
       userId: req.user.id,
-      postId: post.id,
-      type: saveAs === "draft" ? "draft" : "schedule",
-      message:
-        saveAs === "draft"
-          ? `Saved ${post.platform} post draft`
-          : `Scheduled ${post.platform} post`,
-      meta: { platform: post.platform, status: post.status, scheduledAt: post.scheduledAt.toISOString() }
+      platform: platformList[0],
+      caption: data.caption,
+      mediaJson: mediaArr
     });
 
-    return res.status(201).json({ ok: true, post: serializePost(post) });
+    return res.status(201).json({
+      ok: true,
+      post: serializePost(created[0]),
+      posts: created.map(serializePost),
+      groupId,
+      warnings
+    });
   } catch (err) {
     next(err);
   }
@@ -323,8 +554,12 @@ router.put("/:id", requireAuth, async (req, res, next) => {
       });
     }
 
-    const saveAs = parsed.data.status || (existing.status === "draft" ? "draft" : "scheduled");
-    let scheduledAt = parseScheduleDate(parsed.data.scheduledAt) || existing.scheduledAt;
+    const data = parsed.data;
+    const platform = data.platforms?.length ? data.platforms[0] : data.platform;
+    const saveAs = data.status || (existing.status === "draft" ? "draft" : "scheduled");
+    let scheduledAt = parseScheduleDate(data.scheduledAt) || existing.scheduledAt;
+    const mediaArr = data.media !== undefined ? data.media : parseMediaJson(existing.mediaJson);
+    const mediaUrl = primaryMediaUrl(mediaArr, data.mediaUrl ?? existing.mediaUrl);
 
     if (saveAs === "scheduled") {
       try {
@@ -342,23 +577,49 @@ router.put("/:id", requireAuth, async (req, res, next) => {
     }
 
     try {
-      await assertConnectionForSchedule(req.user.id, parsed.data.platform, {
-        mediaUrl: parsed.data.mediaUrl || "",
-        status: saveAs
-      });
+      await assertConnectionForSchedule(req.user.id, platform, { mediaUrl, status: saveAs });
     } catch (err) {
       return res.status(err.status || 400).json({ ok: false, error: err.message });
     }
 
+    if (saveAs === "scheduled" && !data.force) {
+      const conflict = await findSpacingConflict({
+        userId: req.user.id,
+        platform,
+        scheduledAt,
+        excludePostId: existing.id
+      });
+      if (conflict) {
+        return res.status(409).json({
+          ok: false,
+          error: spacingErrorMessage(conflict),
+          code: "SPACING_CONFLICT"
+        });
+      }
+    }
+
+    const timezone = req.user.timezone || "UTC";
+    const aiScore = await computeHeuristicScore({
+      userId: req.user.id,
+      platform,
+      caption: data.caption,
+      scheduledAt,
+      mediaJson: mediaArr,
+      timezone
+    });
+
     const post = await prisma.scheduledPost.update({
       where: { id: existing.id },
       data: {
-        platform: parsed.data.platform,
-        caption: parsed.data.caption,
-        mediaUrl: parsed.data.mediaUrl || "",
+        platform,
+        caption: data.caption,
+        mediaUrl,
+        mediaJson: JSON.stringify(mediaArr),
         scheduledAt,
         status: saveAs,
-        errorMessage: saveAs === "scheduled" ? "" : existing.errorMessage
+        priority: data.priority || existing.priority,
+        errorMessage: saveAs === "scheduled" ? "" : existing.errorMessage,
+        aiScoreJson: JSON.stringify(aiScore)
       }
     });
 
@@ -452,6 +713,169 @@ router.post("/:id/retry", requireAuth, async (req, res, next) => {
       type: "retry",
       message: `Retry queued for ${post.platform} post`,
       meta: { platform: post.platform, attemptCount: post.attemptCount }
+    });
+
+    return res.json({ ok: true, post: serializePost(post) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Clone as a new draft, one day later — a real, independent copy. */
+router.post("/:id/duplicate", requireAuth, async (req, res, next) => {
+  try {
+    const existing = await prisma.scheduledPost.findFirst({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+    if (!existing) {
+      return res.status(404).json({ ok: false, error: "Post not found." });
+    }
+
+    const scheduledAt = new Date(existing.scheduledAt);
+    scheduledAt.setDate(scheduledAt.getDate() + 1);
+
+    const clone = await prisma.scheduledPost.create({
+      data: {
+        userId: req.user.id,
+        platform: existing.platform,
+        caption: existing.caption,
+        mediaUrl: existing.mediaUrl,
+        mediaJson: existing.mediaJson,
+        scheduledAt,
+        status: "draft",
+        priority: existing.priority,
+        source: existing.source,
+        groupId: ""
+      }
+    });
+
+    await logActivity({
+      userId: req.user.id,
+      postId: clone.id,
+      type: "duplicate",
+      message: `Duplicated ${existing.platform} post as a new draft`,
+      meta: { platform: existing.platform, sourcePostId: existing.id }
+    });
+
+    return res.status(201).json({ ok: true, post: serializePost(clone) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Clone to N future dates at a chosen interval — for repeat campaigns. */
+router.post("/:id/clone-series", requireAuth, async (req, res, next) => {
+  try {
+    const existing = await prisma.scheduledPost.findFirst({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+    if (!existing) {
+      return res.status(404).json({ ok: false, error: "Post not found." });
+    }
+
+    const parsed = cloneSeriesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ ok: false, error: parsed.error.issues[0]?.message || "Invalid request." });
+    }
+
+    const { count, intervalUnit, intervalValue } = parsed.data;
+    const dayMs = 24 * 60 * 60 * 1000;
+    const stepMs = intervalUnit === "week" ? intervalValue * 7 * dayMs : intervalValue * dayMs;
+    const seriesId = crypto.randomUUID();
+
+    const created = [];
+    for (let i = 1; i <= count; i += 1) {
+      const scheduledAt = new Date(existing.scheduledAt.getTime() + stepMs * i);
+      const clone = await prisma.scheduledPost.create({
+        data: {
+          userId: req.user.id,
+          platform: existing.platform,
+          caption: existing.caption,
+          mediaUrl: existing.mediaUrl,
+          mediaJson: existing.mediaJson,
+          scheduledAt,
+          status: "draft",
+          priority: existing.priority,
+          source: existing.source,
+          groupId: seriesId
+        }
+      });
+      created.push(clone);
+    }
+
+    await logActivity({
+      userId: req.user.id,
+      postId: existing.id,
+      type: "clone_series",
+      message: `Cloned ${existing.platform} post into a ${count}-post series (every ${intervalValue} ${intervalUnit}(s))`,
+      meta: { platform: existing.platform, sourcePostId: existing.id, count, intervalUnit, intervalValue, seriesId }
+    });
+
+    return res.status(201).json({ ok: true, posts: created.map(serializePost), seriesId });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Soft-archive: hides from default views but keeps a real, restorable record. */
+router.post("/:id/archive", requireAuth, async (req, res, next) => {
+  try {
+    const existing = await prisma.scheduledPost.findFirst({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+    if (!existing) {
+      return res.status(404).json({ ok: false, error: "Post not found." });
+    }
+    if (!ARCHIVABLE.has(existing.status)) {
+      return res.status(409).json({
+        ok: false,
+        error: `Cannot archive a post with status "${existing.status}".`
+      });
+    }
+
+    const post = await prisma.scheduledPost.update({
+      where: { id: existing.id },
+      data: { status: "archived", previousStatus: existing.status }
+    });
+
+    await logActivity({
+      userId: req.user.id,
+      postId: post.id,
+      type: "archive",
+      message: `Archived ${post.platform} post`,
+      meta: { platform: post.platform, previousStatus: existing.status }
+    });
+
+    return res.json({ ok: true, post: serializePost(post) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Real Undo — reverts an archived post back to its previous status. */
+router.post("/:id/restore", requireAuth, async (req, res, next) => {
+  try {
+    const existing = await prisma.scheduledPost.findFirst({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+    if (!existing) {
+      return res.status(404).json({ ok: false, error: "Post not found." });
+    }
+    if (existing.status !== "archived" || !existing.previousStatus) {
+      return res.status(409).json({ ok: false, error: "Only archived posts can be restored." });
+    }
+
+    const post = await prisma.scheduledPost.update({
+      where: { id: existing.id },
+      data: { status: existing.previousStatus, previousStatus: "" }
+    });
+
+    await logActivity({
+      userId: req.user.id,
+      postId: post.id,
+      type: "restore",
+      message: `Restored ${post.platform} post to "${post.status}"`,
+      meta: { platform: post.platform, restoredStatus: post.status }
     });
 
     return res.json({ ok: true, post: serializePost(post) });

@@ -61,7 +61,28 @@ export const config = {
   openai: {
     // Never log or return this value. Optional in non-production so the API can boot without a key.
     apiKey: requireEnv("OPENAI_API_KEY", { optional: !isProd }),
-    model: process.env.OPENAI_MODEL || "gpt-4o-mini"
+    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    // Sprint 11 — AI Smart Scheduler image generation
+    imageModel: process.env.OPENAI_IMAGE_MODEL || "gpt-image-1"
+  },
+  scheduler: {
+    // Sprint 11 — AI Smart Scheduler: minimum gap enforced between two posts
+    // on the same platform ("never publish two posts together").
+    minPostSpacingMinutes: Math.max(0, Number(process.env.MIN_POST_SPACING_MINUTES || 5)),
+    uploadDir: optionalEnv("UPLOAD_DIR", "uploads"),
+    publicUploadBaseUrl: optionalEnv("PUBLIC_UPLOAD_BASE_URL", "/uploads"),
+    maxUploadSizeMb: Math.max(1, Number(process.env.MAX_UPLOAD_SIZE_MB || 100))
+  },
+  clipAi: {
+    // Sprint 12 — Viral Clip AI: reuses the same uploads root as the Sprint 11
+    // media pipeline (uploadDir above), under a "clips" subfolder.
+    maxUploadSizeMb: Math.max(1, Number(process.env.CLIP_MAX_UPLOAD_SIZE_MB || 2048)),
+    maxSourceDurationMin: Math.max(1, Number(process.env.CLIP_MAX_SOURCE_DURATION_MIN || 120)),
+    whisperModel: optionalEnv("OPENAI_WHISPER_MODEL", "whisper-1"),
+    // "heuristic-motion" ships today; a real face-detection model can be
+    // registered under this same key later without changing call sites.
+    faceTracker: optionalEnv("FACE_TRACKER", "heuristic-motion"),
+    workerIntervalMs: Math.max(1000, Number(process.env.CLIP_WORKER_INTERVAL_MS || 5000))
   },
   cookieName: process.env.AUTH_COOKIE_NAME || "pa_session",
   sessionTtlDays: Number(process.env.SESSION_TTL_DAYS || 14),

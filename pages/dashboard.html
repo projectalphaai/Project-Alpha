@@ -15,6 +15,7 @@
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"></noscript>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="../css/clip-ai.css">
 </head>
 <body class="dashboard-body">
     <a href="#dashboard" class="skip-link">Skip to main content</a>
@@ -61,6 +62,18 @@
                         <a href="#schedule" data-section="schedule">
                             <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M6 2a1 1 0 00-2 0v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2h-1V2a1 1 0 10-2 0v1H7V2a1 1 0 00-1-1zM4 7h12v8H4V7z"/></svg>
                             Scheduler
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#clip-ai" data-section="clip-ai">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M2 6a2 2 0 012-2h6a2 2 0 012 2v1.586l3.293-3.293A1 1 0 0117 5v10a1 1 0 01-1.707.707L12 12.414V14a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+                            Clip AI
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#top-performing-clips" data-section="top-performing-clips">
+                            <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.368 2.446a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.538 1.118l-3.367-2.446a1 1 0 00-1.176 0l-3.367 2.446c-.783.57-1.838-.196-1.538-1.118l1.286-3.957a1 1 0 00-.363-1.118l-3.368-2.446c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.951-.69l1.286-3.957z"/></svg>
+                            Top Performing Clips
                         </a>
                     </li>
                     <li>
@@ -267,7 +280,9 @@
 
                 <div class="scheduler-toolbar">
                     <div class="view-toggle" role="group" aria-label="Scheduler view">
-                        <button type="button" class="view-toggle-btn active" data-scheduler-view="calendar" aria-pressed="true">Calendar</button>
+                        <button type="button" class="view-toggle-btn active" data-scheduler-view="calendar" aria-pressed="true">Month</button>
+                        <button type="button" class="view-toggle-btn" data-scheduler-view="week" aria-pressed="false">Week</button>
+                        <button type="button" class="view-toggle-btn" data-scheduler-view="day" aria-pressed="false">Day</button>
                         <button type="button" class="view-toggle-btn" data-scheduler-view="list" aria-pressed="false">List</button>
                         <button type="button" class="view-toggle-btn" data-scheduler-view="queue" aria-pressed="false">Queue</button>
                         <button type="button" class="view-toggle-btn" data-scheduler-view="history" aria-pressed="false">History</button>
@@ -275,6 +290,43 @@
                     <button type="button" class="btn btn-glow btn-sm" id="open-schedule-modal">
                         <span class="btn-label">Create Scheduled Post</span>
                     </button>
+                </div>
+
+                <div class="scheduler-filters-bar glass-panel" id="scheduler-filters-bar">
+                    <div class="filter-field">
+                        <label for="filter-platform">Platform</label>
+                        <select id="filter-platform">
+                            <option value="">All platforms</option>
+                        </select>
+                    </div>
+                    <div class="filter-field">
+                        <label for="filter-status">Status</label>
+                        <select id="filter-status">
+                            <option value="">All statuses</option>
+                            <option value="draft">Draft</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="processing">Processing</option>
+                            <option value="published">Published</option>
+                            <option value="failed">Failed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
+                    <div class="filter-field">
+                        <label for="filter-source">Source</label>
+                        <select id="filter-source">
+                            <option value="">All sources</option>
+                            <option value="ai">AI-generated</option>
+                            <option value="manual">Manual</option>
+                        </select>
+                    </div>
+                    <div class="filter-field">
+                        <label for="filter-workspace">Workspace</label>
+                        <select id="filter-workspace" disabled>
+                            <option value="current">My workspace</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-outline-glow btn-sm" id="filters-clear">Clear filters</button>
                 </div>
 
                 <div class="scheduler-layout">
@@ -299,6 +351,38 @@
                         </div>
                     </div>
 
+                    <div class="calendar-app glass-panel" id="scheduler-week-view" hidden>
+                        <div class="calendar-toolbar">
+                            <button type="button" class="cal-nav-btn" id="week-prev" aria-label="Previous week">
+                                <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"/></svg>
+                            </button>
+                            <h3 class="calendar-month-label" id="week-label">This week</h3>
+                            <button type="button" class="cal-nav-btn" id="week-next" aria-label="Next week">
+                                <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
+                            </button>
+                            <button type="button" class="btn btn-outline-glow btn-sm" id="week-today">Today</button>
+                        </div>
+                        <div class="hour-grid-scroll">
+                            <div class="hour-grid week-grid" id="week-grid"></div>
+                        </div>
+                    </div>
+
+                    <div class="calendar-app glass-panel" id="scheduler-day-view" hidden>
+                        <div class="calendar-toolbar">
+                            <button type="button" class="cal-nav-btn" id="day-prev" aria-label="Previous day">
+                                <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"/></svg>
+                            </button>
+                            <h3 class="calendar-month-label" id="day-label">Today</h3>
+                            <button type="button" class="cal-nav-btn" id="day-next" aria-label="Next day">
+                                <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"/></svg>
+                            </button>
+                            <button type="button" class="btn btn-outline-glow btn-sm" id="day-today">Today</button>
+                        </div>
+                        <div class="hour-grid-scroll">
+                            <div class="hour-grid day-grid" id="day-grid"></div>
+                        </div>
+                    </div>
+
                     <div class="scheduled-list-panel glass-panel" id="scheduler-list-view" hidden>
                         <div class="panel-header">
                             <h3>All posts</h3>
@@ -311,6 +395,10 @@
                         <div class="panel-header">
                             <h3>Publishing queue</h3>
                             <span class="panel-meta" id="queue-counts">Upcoming · processing · failed</span>
+                        </div>
+                        <div class="queue-subtabs" role="tablist" aria-label="Queue tabs">
+                            <button type="button" class="queue-subtab-btn active" data-queue-tab="all" role="tab" aria-selected="true">All</button>
+                            <button type="button" class="queue-subtab-btn" data-queue-tab="retry" role="tab" aria-selected="false">Retry Queue</button>
                         </div>
                         <ul class="scheduled-posts-list" id="publish-queue-list"></ul>
                         <p class="empty-state" id="queue-empty" hidden>Queue is empty. Schedule a post to enqueue it.</p>
@@ -417,6 +505,177 @@
                     </div>
                     <ul class="scheduled-posts-list" id="connected-accounts-list"></ul>
                     <p class="empty-state" id="connected-accounts-empty">No accounts connected yet.</p>
+                </div>
+            </section>
+
+            <!-- Sprint 12: Viral Clip AI -->
+            <section id="clip-ai" class="dashboard-section" aria-labelledby="clip-ai-heading">
+                <h2 id="clip-ai-heading">Clip AI</h2>
+                <p class="section-lead">Upload a long-form video. Real Whisper transcription and transcript-grounded AI detect hooks, emotional beats, pauses, scene changes, and high-energy audio moments — then render real 9:16 clips with smart crop, captions, and hashtags for Instagram, Facebook, TikTok, and YouTube.</p>
+
+                <div class="glass-panel nested-panel" id="clip-upload-panel">
+                    <div class="panel-header">
+                        <h3>Upload source video</h3>
+                        <span class="panel-meta">MP4 / MOV / WebM</span>
+                    </div>
+                    <form id="clip-upload-form" class="clip-upload-form" novalidate>
+                        <label class="clip-dropzone" id="clip-dropzone" for="clip-video-input">
+                            <svg viewBox="0 0 20 20" aria-hidden="true" width="28" height="28"><path fill="currentColor" d="M2 6a2 2 0 012-2h6a2 2 0 012 2v1.586l3.293-3.293A1 1 0 0117 5v10a1 1 0 01-1.707.707L12 12.414V14a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+                            <span id="clip-dropzone-label">Drag a video here or click to browse</span>
+                            <input type="file" id="clip-video-input" accept="video/*" hidden>
+                        </label>
+                        <div class="clip-upload-row">
+                            <input type="text" id="clip-source-title" placeholder="Title (optional)" maxlength="200">
+                            <button type="submit" class="btn btn-glow btn-sm" id="clip-upload-submit">
+                                <span class="btn-label">Upload &amp; Analyze</span>
+                                <span class="btn-spinner" hidden aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="clip-upload-progress" id="clip-upload-progress" hidden>
+                            <div class="clip-upload-progress-bar" id="clip-upload-progress-bar"></div>
+                            <span id="clip-upload-progress-label">Uploading…</span>
+                        </div>
+                        <p class="field-error" id="clip-upload-error" hidden role="alert"></p>
+                    </form>
+                </div>
+
+                <div class="glass-panel nested-panel" id="clip-sources-panel" style="margin-top:18px">
+                    <div class="panel-header">
+                        <h3>Source videos</h3>
+                        <span class="panel-meta" id="clip-sources-meta">Transcription and moment detection run in the background</span>
+                    </div>
+                    <ul class="clip-source-list" id="clip-source-list"></ul>
+                    <p class="empty-state" id="clip-sources-empty" hidden>No source videos yet. Upload one above to get started.</p>
+                </div>
+
+                <div class="glass-panel nested-panel" id="clip-moments-panel" style="margin-top:18px" hidden>
+                    <div class="panel-header">
+                        <h3>AI-detected moments — <span id="clip-moments-source-title"></span></h3>
+                        <span class="panel-meta" id="clip-moments-meta"></span>
+                    </div>
+                    <p class="panel-meta" id="clip-moments-empty" hidden>No moments detected yet, or analysis is still running.</p>
+                    <ul class="moment-list" id="clip-moment-list"></ul>
+
+                    <form id="clip-create-form" class="clip-create-form">
+                        <input type="hidden" id="clip-create-source-id" value="">
+                        <div class="form-field-row">
+                            <div class="form-field">
+                                <label for="clip-create-start">Start (sec)</label>
+                                <input type="number" id="clip-create-start" min="0" step="0.5" value="0" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="clip-create-end">End (sec)</label>
+                                <input type="number" id="clip-create-end" min="0" step="0.5" value="15" required>
+                            </div>
+                            <button type="button" class="btn btn-outline-glow btn-sm" id="clip-use-selected-moments">Use selected moments' range</button>
+                        </div>
+                        <div class="form-field">
+                            <label>Platforms <span class="required">*</span></label>
+                            <div class="platform-checkbox-grid" id="clip-create-platforms-grid"></div>
+                            <span class="field-error" id="clip-create-platform-error" hidden>Select at least one platform.</span>
+                        </div>
+                        <div class="form-field-row">
+                            <div class="form-field">
+                                <label for="clip-create-title">AI title</label>
+                                <input type="text" id="clip-create-title" maxlength="200" placeholder="e.g. This moment changed everything 🤯">
+                            </div>
+                            <div class="form-field">
+                                <label for="clip-create-hashtags">Hashtags</label>
+                                <input type="text" id="clip-create-hashtags" maxlength="500" placeholder="#viral #shorts">
+                            </div>
+                        </div>
+                        <div class="form-field-row">
+                            <div class="form-field">
+                                <label for="clip-create-zoom">Zoom</label>
+                                <select id="clip-create-zoom">
+                                    <option value="none">None</option>
+                                    <option value="in">Slow zoom in</option>
+                                    <option value="out">Slow zoom out</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label for="clip-create-transition">Transition</label>
+                                <select id="clip-create-transition">
+                                    <option value="none">None</option>
+                                    <option value="fade">Fade in/out</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-glow btn-sm" id="clip-create-submit">
+                            <span class="btn-label">Generate Clips</span>
+                            <span class="btn-spinner" hidden aria-hidden="true"></span>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="glass-panel nested-panel" id="clip-library-panel" style="margin-top:18px">
+                    <div class="panel-header">
+                        <h3>Clip library</h3>
+                        <div class="clip-library-filters">
+                            <select id="clip-filter-platform">
+                                <option value="">All platforms</option>
+                                <option value="instagram">Instagram</option>
+                                <option value="facebook">Facebook</option>
+                                <option value="tiktok">TikTok</option>
+                                <option value="youtube">YouTube</option>
+                            </select>
+                            <select id="clip-filter-status">
+                                <option value="">All statuses</option>
+                                <option value="queued">Queued</option>
+                                <option value="rendering">Rendering</option>
+                                <option value="ready">Ready</option>
+                                <option value="failed">Failed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="clip-library-grid" id="clip-library-grid"></div>
+                    <p class="empty-state" id="clip-library-empty" hidden>No clips yet. Select moments from a source video above and generate clips.</p>
+                </div>
+            </section>
+
+            <!-- Sprint 12: Top Performing Clips -->
+            <section id="top-performing-clips" class="dashboard-section" aria-labelledby="top-performing-heading">
+                <h2 id="top-performing-heading">Top Performing Clips</h2>
+                <p class="section-lead">Real platform analytics only — clips are ranked once they've been published with live credentials and the platform has reported genuine insights.</p>
+
+                <div class="glass-panel nested-panel">
+                    <div class="panel-header">
+                        <h3>Ranking</h3>
+                        <div class="filter-field">
+                            <label for="top-clips-sort">Sort by</label>
+                            <select id="top-clips-sort">
+                                <option value="watchTime">Watch time</option>
+                                <option value="retention">Retention</option>
+                                <option value="shares">Shares</option>
+                                <option value="saves">Saves</option>
+                                <option value="comments">Comments</option>
+                                <option value="reach">Reach</option>
+                                <option value="followers">Followers gained</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="top-clips-table-wrap">
+                        <table class="top-clips-table" id="top-clips-table" hidden>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Clip</th>
+                                    <th>Platform</th>
+                                    <th>Views</th>
+                                    <th>Watch time</th>
+                                    <th>Retention</th>
+                                    <th>Shares</th>
+                                    <th>Saves</th>
+                                    <th>Comments</th>
+                                    <th>Reach</th>
+                                    <th>Followers</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="top-clips-tbody"></tbody>
+                        </table>
+                    </div>
+                    <p class="empty-state" id="top-clips-empty">Loading…</p>
                 </div>
             </section>
 
@@ -1015,39 +1274,123 @@
     <!-- Schedule create/edit modal -->
     <div class="pa-modal" id="schedule-modal" hidden>
         <div class="pa-modal-backdrop" data-close-modal="schedule-modal"></div>
-        <div class="pa-modal-dialog glass-panel" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
+        <div class="pa-modal-dialog glass-panel schedule-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
             <button type="button" class="pa-modal-close" data-close-modal="schedule-modal" aria-label="Close">&times;</button>
             <h2 id="schedule-modal-title">Create scheduled post</h2>
-            <form id="schedule-form" class="post-scheduler" novalidate>
+            <div class="smart-warnings-banner" id="schedule-warnings-banner" hidden></div>
+            <form id="schedule-form" class="post-scheduler post-scheduler-grid" novalidate>
                 <input type="hidden" id="post-id" value="">
-                <div class="form-field">
-                    <label for="post-platform">Platform <span class="required">*</span></label>
-                    <select id="post-platform" name="platform" required>
-                        <option value="">Select Platform</option>
-                        <option value="instagram">Instagram</option>
-                        <option value="facebook">Facebook</option>
-                    </select>
-                    <span class="field-hint">Beta launch supports Instagram and Facebook publishing only.</span>
-                    <span class="field-error" id="platform-error" hidden>Please select a platform.</span>
+                <input type="hidden" id="post-group-id" value="">
+                <input type="hidden" id="post-source" value="manual">
+
+                <div class="scheduler-form-col">
+                    <div class="form-field">
+                        <label>Platforms <span class="required">*</span></label>
+                        <div class="platform-checkbox-grid" id="post-platforms-grid"></div>
+                        <span class="field-hint" id="post-platforms-locked-hint" hidden>Platform can't be changed after a post is created — duplicate it instead.</span>
+                        <span class="field-error" id="platform-error" hidden>Select at least one platform.</span>
+                    </div>
+
+                    <div class="form-field-row">
+                        <div class="form-field">
+                            <label for="post-priority">Priority</label>
+                            <select id="post-priority">
+                                <option value="low">Low</option>
+                                <option value="normal" selected>Normal</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="post-datetime">Date &amp; time <span class="required">*</span></label>
+                            <input type="datetime-local" id="post-datetime" name="datetime" required>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <button type="button" class="btn btn-outline-glow btn-sm" id="smart-time-btn">✨ Suggest best time (Heuristic)</button>
+                        <span class="field-error" id="datetime-error" hidden>Please choose a future date and time.</span>
+                        <span class="field-hint" id="smart-time-hint"></span>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="post-content">Caption <span class="required">*</span></label>
+                        <textarea id="post-content" name="content" placeholder="Write your post caption..." maxlength="2200" required></textarea>
+                        <span class="field-hint"><span id="content-count">0</span>/2200</span>
+                        <span class="field-error" id="content-error" hidden>Please enter a caption (at least 10 characters).</span>
+                    </div>
+
+                    <div class="form-field ai-content-box">
+                        <div class="ai-content-box-header">
+                            <label for="ai-box-prompt">AI Content Box</label>
+                            <span class="badge-ai">AI</span>
+                        </div>
+                        <div class="ai-content-box-row">
+                            <input type="text" id="ai-box-prompt" placeholder="One prompt — e.g. &quot;announce our new AI scheduler&quot;" maxlength="500">
+                            <button type="button" class="btn btn-outline-glow btn-sm" id="ai-box-generate">
+                                <span class="btn-label">Generate</span>
+                                <span class="btn-spinner" hidden aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="ai-content-box-result" id="ai-box-result" hidden>
+                            <div class="ai-variant-tabs" id="ai-variant-tabs"></div>
+                            <p class="ai-variant-text" id="ai-variant-text"></p>
+                            <p class="ai-variant-hashtags" id="ai-variant-hashtags"></p>
+                            <div class="ai-content-box-actions">
+                                <button type="button" class="btn btn-outline-glow btn-sm" id="ai-box-insert">Insert into caption</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field" id="post-media-field">
+                        <label>Media</label>
+                        <div class="media-manager" id="media-manager">
+                            <div class="media-thumb-row" id="media-thumb-row"></div>
+                            <div class="media-manager-actions">
+                                <label class="btn btn-outline-glow btn-sm media-upload-btn">
+                                    <span>Upload</span>
+                                    <input type="file" id="media-file-input" accept="image/*,video/*" multiple hidden>
+                                </label>
+                                <button type="button" class="btn btn-outline-glow btn-sm" id="media-generate-btn">Generate Image (AI)</button>
+                                <button type="button" class="btn btn-outline-glow btn-sm" id="media-generate-video-btn" disabled title="Coming soon">
+                                    Generate Video <span class="badge-soon">Soon</span>
+                                </button>
+                            </div>
+                            <div class="ai-content-box-row" id="media-generate-prompt-row" hidden>
+                                <input type="text" id="media-generate-prompt" placeholder="Describe the image to generate..." maxlength="1000">
+                                <button type="button" class="btn btn-glow btn-sm" id="media-generate-confirm">
+                                    <span class="btn-label">Generate</span>
+                                    <span class="btn-spinner" hidden aria-hidden="true"></span>
+                                </button>
+                            </div>
+                        </div>
+                        <span class="field-hint" id="post-media-hint">Optional. Instagram publishing requires at least one public image URL.</span>
+                        <span class="field-error" id="media-error" hidden>Instagram requires a public http(s) image URL.</span>
+                        <input type="url" id="post-media-url" hidden>
+                    </div>
                 </div>
-                <div class="form-field">
-                    <label for="post-content">Caption <span class="required">*</span></label>
-                    <textarea id="post-content" name="content" placeholder="Write your post caption..." maxlength="2200" required></textarea>
-                    <span class="field-hint"><span id="content-count">0</span>/2200</span>
-                    <span class="field-error" id="content-error" hidden>Please enter a caption (at least 10 characters).</span>
+
+                <div class="scheduler-form-col">
+                    <div class="form-field">
+                        <label>Platform preview</label>
+                        <div class="platform-preview-tabs" id="platform-preview-tabs"></div>
+                        <div class="platform-preview-frame" id="platform-preview-frame">
+                            <p class="empty-state">Select a platform to preview your post.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-field ai-score-panel" id="ai-score-panel">
+                        <div class="ai-score-header">
+                            <label>Heuristic AI Score <span class="badge-ai">Heuristic</span></label>
+                            <button type="button" class="btn btn-outline-glow btn-sm" id="ai-score-refresh">Recalculate</button>
+                        </div>
+                        <div class="ai-score-meters" id="ai-score-meters">
+                            <p class="empty-state">Score updates as you edit the caption, media, and time.</p>
+                        </div>
+                        <ul class="ai-score-explanation" id="ai-score-explanation"></ul>
+                    </div>
                 </div>
-                <div class="form-field" id="post-media-field">
-                    <label for="post-media-url">Image URL <span class="required" id="post-media-required" hidden>*</span></label>
-                    <input type="url" id="post-media-url" name="mediaUrl" maxlength="500" placeholder="https://… (public image Meta can download)">
-                    <span class="field-hint" id="post-media-hint">Required for Instagram. Optional link for Facebook posts.</span>
-                    <span class="field-error" id="media-error" hidden>Instagram requires a public http(s) image URL.</span>
-                </div>
-                <div class="form-field">
-                    <label for="post-datetime">Date &amp; time <span class="required">*</span></label>
-                    <input type="datetime-local" id="post-datetime" name="datetime" required>
-                    <span class="field-error" id="datetime-error" hidden>Please choose a future date and time.</span>
-                </div>
-                <div class="form-actions">
+
+                <div class="form-actions full-width">
                     <button type="button" class="btn btn-outline-glow btn-sm" data-close-modal="schedule-modal">Close</button>
                     <button type="button" class="btn btn-outline-glow btn-sm" id="schedule-save-draft">
                         <span class="btn-label">Save Draft</span>
@@ -1058,8 +1401,132 @@
                         <span class="btn-spinner" hidden aria-hidden="true"></span>
                     </button>
                 </div>
-                <div class="form-success" id="schedule-success" hidden role="status">Post saved to PostgreSQL.</div>
+                <div class="form-success full-width" id="schedule-success" hidden role="status">Post saved to PostgreSQL.</div>
             </form>
+        </div>
+    </div>
+
+    <div class="pa-modal" id="clone-series-modal" hidden>
+        <div class="pa-modal-backdrop" data-close-modal="clone-series-modal"></div>
+        <div class="pa-modal-dialog glass-panel" role="dialog" aria-modal="true" aria-labelledby="clone-series-title">
+            <button type="button" class="pa-modal-close" data-close-modal="clone-series-modal" aria-label="Close">&times;</button>
+            <h2 id="clone-series-title">Clone as a series</h2>
+            <p class="oauth-note">Creates copies of this post as new drafts at a repeating interval.</p>
+            <div class="form-field-row">
+                <div class="form-field">
+                    <label for="clone-series-count">How many posts</label>
+                    <input type="number" id="clone-series-count" min="1" max="20" value="3">
+                </div>
+                <div class="form-field">
+                    <label for="clone-series-interval-value">Every</label>
+                    <input type="number" id="clone-series-interval-value" min="1" max="30" value="1">
+                </div>
+                <div class="form-field">
+                    <label for="clone-series-interval-unit">Unit</label>
+                    <select id="clone-series-interval-unit">
+                        <option value="day">Day(s)</option>
+                        <option value="week">Week(s)</option>
+                    </select>
+                </div>
+            </div>
+            <input type="hidden" id="clone-series-post-id" value="">
+            <div class="pa-modal-actions">
+                <button type="button" class="btn btn-outline-glow btn-sm" data-close-modal="clone-series-modal">Cancel</button>
+                <button type="button" class="btn btn-glow btn-sm" id="clone-series-confirm-btn">
+                    <span class="btn-label">Create series</span>
+                    <span class="btn-spinner" hidden aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sprint 12: Clip AI Timeline Editor -->
+    <div class="pa-modal" id="clip-editor-modal" hidden>
+        <div class="pa-modal-backdrop" data-close-modal="clip-editor-modal"></div>
+        <div class="pa-modal-dialog glass-panel clip-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="clip-editor-title">
+            <button type="button" class="pa-modal-close" data-close-modal="clip-editor-modal" aria-label="Close">&times;</button>
+            <h2 id="clip-editor-title">Edit clip</h2>
+            <input type="hidden" id="clip-editor-id" value="">
+
+            <div class="clip-editor-layout">
+                <div class="clip-editor-preview">
+                    <video id="clip-editor-video" controls playsinline></video>
+                    <p class="empty-state" id="clip-editor-video-empty" hidden>Preview appears once rendering finishes.</p>
+                    <span class="clip-render-pill" id="clip-editor-status-pill"></span>
+                    <p class="field-error" id="clip-editor-render-error" hidden></p>
+                </div>
+                <div class="clip-editor-form">
+                    <div class="form-field-row">
+                        <div class="form-field">
+                            <label for="clip-editor-start">Start (sec)</label>
+                            <input type="number" id="clip-editor-start" min="0" step="0.5">
+                        </div>
+                        <div class="form-field">
+                            <label for="clip-editor-end">End (sec)</label>
+                            <input type="number" id="clip-editor-end" min="0" step="0.5">
+                        </div>
+                    </div>
+                    <div class="clip-timeline-ruler" id="clip-editor-ruler"></div>
+                    <div class="form-field">
+                        <label for="clip-editor-title-input">Title</label>
+                        <input type="text" id="clip-editor-title-input" maxlength="200">
+                    </div>
+                    <div class="form-field">
+                        <label for="clip-editor-hashtags">Hashtags</label>
+                        <input type="text" id="clip-editor-hashtags" maxlength="500">
+                    </div>
+                    <div class="form-field-row">
+                        <div class="form-field">
+                            <label for="clip-editor-zoom">Zoom</label>
+                            <select id="clip-editor-zoom">
+                                <option value="none">None</option>
+                                <option value="in">Slow zoom in</option>
+                                <option value="out">Slow zoom out</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="clip-editor-transition">Transition</label>
+                            <select id="clip-editor-transition">
+                                <option value="none">None</option>
+                                <option value="fade">Fade in/out</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-field">
+                        <label for="clip-editor-merge-select">Merge with another clip from this source</label>
+                        <div class="clip-upload-row">
+                            <select id="clip-editor-merge-select"><option value="">Select a clip…</option></select>
+                            <button type="button" class="btn btn-outline-glow btn-sm" id="clip-editor-merge-btn">Merge</button>
+                        </div>
+                    </div>
+
+                    <div class="clip-editor-ai-explanation" id="clip-editor-ai-explanation" hidden>
+                        <span class="badge-ai">AI</span>
+                        <p id="clip-editor-ai-explanation-text"></p>
+                    </div>
+
+                    <div class="clip-editor-analytics" id="clip-editor-analytics">
+                        <h4>Publications &amp; analytics</h4>
+                        <ul id="clip-editor-publications-list" class="activity-list"></ul>
+                        <p class="empty-state" id="clip-editor-analytics-empty">No publications yet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pa-modal-actions clip-editor-actions">
+                <button type="button" class="btn btn-outline-glow btn-sm danger" id="clip-editor-delete-btn">Delete</button>
+                <button type="button" class="btn btn-outline-glow btn-sm" id="clip-editor-duplicate-btn">Duplicate</button>
+                <button type="button" class="btn btn-outline-glow btn-sm" id="clip-editor-regenerate-btn">Regenerate</button>
+                <button type="button" class="btn btn-outline-glow btn-sm" id="clip-editor-generate-similar-btn">Generate Similar</button>
+                <button type="button" class="btn btn-glow btn-sm" id="clip-editor-save-btn">
+                    <span class="btn-label">Save &amp; Re-render</span>
+                    <span class="btn-spinner" hidden aria-hidden="true"></span>
+                </button>
+                <button type="button" class="btn btn-glow btn-sm" id="clip-editor-publish-btn">
+                    <span class="btn-label">Publish</span>
+                    <span class="btn-spinner" hidden aria-hidden="true"></span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1067,5 +1534,6 @@
     <script src="../js/api.js" defer></script>
     <script src="../js/auth.js" defer></script>
     <script src="../js/dashboard.js" defer></script>
+    <script src="../js/clip-ai.js" defer></script>
 </body>
 </html>

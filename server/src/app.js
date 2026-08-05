@@ -17,6 +17,9 @@ import leadsRoutes from "./routes/leads.js";
 import billingRoutes, { handleStripeWebhook } from "./routes/billing.js";
 import adminRoutes from "./routes/admin.js";
 import analyticsRoutes from "./routes/analytics.js";
+import mediaRoutes from "./routes/media.js";
+import schedulerAiRoutes from "./routes/scheduler-ai.js";
+import clipsRoutes from "./routes/clips.js";
 import { getPublisherWorkerConfig } from "./worker/publisherWorker.js";
 import { listProviders } from "./lib/oauth/registry.js";
 import { isMockConnectAllowed } from "./lib/oauth/mock.js";
@@ -121,7 +124,12 @@ export function createApp() {
   app.use("/api/billing", billingRoutes);
   app.use("/api/admin", adminRoutes);
   app.use("/api/analytics", analyticsRoutes);
+  app.use("/api/media", mediaRoutes);
+  app.use("/api/scheduler/ai", schedulerAiRoutes);
+  app.use("/api/clips", clipsRoutes);
 
+  // Sprint 11 — uploaded/AI-generated media lives under <root>/uploads and is
+  // served by the existing static middleware below at /uploads/<userId>/<file>.
   app.use(express.static(rootDir, { extensions: ["html"] }));
 
   app.use((err, _req, res, _next) => {

@@ -2,6 +2,7 @@ import { prisma } from "../lib/prisma.js";
 import { logActivity } from "../lib/activity.js";
 import { resolvePublisherAdapter, getPublisherAdapterInfo } from "../lib/publishers/index.js";
 import { friendlyPublishError } from "../lib/friendlyErrors.js";
+import { priorityWeight } from "../lib/scheduling/spacing.js";
 
 let timer = null;
 let ticking = false;
@@ -28,18 +29,31 @@ export function getPublisherWorkerConfig() {
 
 /**
  * Claim due scheduled posts atomically (status must still be "scheduled").
+ * Ordering: highest priority first, then oldest scheduledAt first within the
+ * same priority (Sprint 11). We fetch a larger due-candidate pool ordered by
+ * scheduledAt (cheap, indexed), then re-sort by priority weight in JS —
+ * avoids a DB-specific CASE-ordering query while still being deterministic.
  */
 export async function claimDuePosts(limit = 10) {
   const now = new Date();
-  const due = await prisma.scheduledPost.findMany({
+  const candidatePoolSize = Math.min(500, Math.max(limit * 5, limit));
+  const dueCandidates = await prisma.scheduledPost.findMany({
     where: {
       status: "scheduled",
       scheduledAt: { lte: now }
     },
     orderBy: { scheduledAt: "asc" },
-    take: limit,
-    select: { id: true }
+    take: candidatePoolSize,
+    select: { id: true, priority: true, scheduledAt: true }
   });
+
+  const due = dueCandidates
+    .sort((a, b) => {
+      const weightDiff = priorityWeight(b.priority) - priorityWeight(a.priority);
+      if (weightDiff !== 0) return weightDiff;
+      return a.scheduledAt.getTime() - b.scheduledAt.getTime();
+    })
+    .slice(0, limit);
 
   const claimed = [];
   for (const row of due) {

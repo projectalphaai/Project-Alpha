@@ -40,6 +40,10 @@ model User {
   ownedLeads        Lead[]              @relation("LeadWorkspace")
   assignedLeads     Lead[]              @relation("LeadOwner")
   leadNotes         LeadNote[]
+  mediaAssets       MediaAsset[]
+  clipSources       ClipSource[]
+  clips             Clip[]
+  clipPublications  ClipPublication[]
 
   @@index([createdAt])
   @@index([stripeCustomerId])
@@ -88,6 +92,13 @@ model ScheduledPost {
   lastAttemptAt  DateTime?
   publishedAt    DateTime?
   externalPostId String    @default("")
+  // Sprint 11 — AI Smart Scheduler
+  priority       String    @default("normal") // low | normal | high | urgent
+  source         String    @default("manual") // manual | ai
+  groupId        String    @default("") // links posts created together as a multi-platform fan-out
+  previousStatus String    @default("") // enables real undo after archive/cancel
+  mediaJson      String    @default("[]") // [{ assetId, url, type, width, height, durationSec }]
+  aiScoreJson    String    @default("{}") // cached heuristic AI score + explanation
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -97,6 +108,152 @@ model ScheduledPost {
   @@index([userId, scheduledAt])
   @@index([status, scheduledAt])
   @@index([userId, status])
+  @@index([groupId])
+}
+
+/// Sprint 11 — media library (uploads + AI-generated images)
+model MediaAsset {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String // image | video
+  url         String
+  source      String // upload | ai-generated
+  prompt      String   @default("")
+  width       Int?
+  height      Int?
+  durationSec Float?
+  sizeBytes   Int?
+  mimeType    String   @default("")
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+/// Sprint 12 — Viral Clip AI: an uploaded long-form source video.
+/// status: uploaded | transcribing | analyzing | ready | failed
+model ClipSource {
+  id             String    @id @default(cuid())
+  userId         String
+  title          String    @default("")
+  url            String
+  durationSec    Float?
+  width          Int?
+  height         Int?
+  sizeBytes      Int?
+  mimeType       String    @default("")
+  status         String    @default("uploaded")
+  errorMessage   String    @default("")
+  transcriptJson String    @default("{}") // { language, segments: [{ start, end, text }] }
+  analyzedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moments ClipMoment[]
+  clips   Clip[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+/// Sprint 12 — a single AI-detected moment inside a ClipSource's transcript/timeline.
+/// type: hook | emotional | scene_change | high_energy_audio | pause | emphasis
+/// high_energy_audio is a heuristic "possible laughter/applause/reaction" signal derived
+/// from real audio-energy analysis — never presented as a trained classifier result.
+model ClipMoment {
+  id          String   @id @default(cuid())
+  sourceId    String
+  type        String
+  startSec    Float
+  endSec      Float
+  score       Int      @default(50) // 0-100 heuristic strength
+  explanation String   @default("")
+  createdAt   DateTime @default(now())
+
+  source ClipSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId, type])
+  @@index([sourceId, score])
+}
+
+/// Sprint 12 — one generated short-form clip (always 9:16), tagged to one target platform.
+/// renderStatus: queued | rendering | ready | failed
+model Clip {
+  id               String    @id @default(cuid())
+  userId           String
+  sourceId         String
+  groupId          String    @default("") // links platform variants created together
+  platform         String    // instagram | facebook | tiktok | youtube
+  momentIdsJson    String    @default("[]")
+  startSec         Float
+  endSec           Float
+  title            String    @default("")
+  captionsJson     String    @default("[]") // burned-in caption cues: [{ start, end, text }]
+  hashtags         String    @default("")
+  styleJson        String    @default("{}") // { crop: 'heuristic-motion', zoom, transition }
+  aiExplanationJson String   @default("{}") // heuristic score + explanation shown to the user
+  renderStatus     String    @default("queued")
+  errorMessage     String    @default("")
+  outputUrl        String    @default("")
+  thumbnailUrl     String    @default("")
+  durationSec      Float?
+  archived         Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source       ClipSource        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  publications ClipPublication[]
+
+  @@index([userId, createdAt])
+  @@index([sourceId])
+  @@index([groupId])
+  @@index([renderStatus])
+}
+
+/// Sprint 12 — one publish attempt/record of a Clip to a platform.
+/// status: queued | publishing | published | failed
+model ClipPublication {
+  id             String    @id @default(cuid())
+  clipId         String
+  userId         String
+  platform       String
+  status         String    @default("queued")
+  externalPostId String    @default("")
+  errorMessage   String    @default("")
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  clip      Clip                    @relation(fields: [clipId], references: [id], onDelete: Cascade)
+  user      User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshots ClipAnalyticsSnapshot[]
+
+  @@index([clipId])
+  @@index([userId, status])
+}
+
+/// Sprint 12 — real platform analytics only. Rows are only ever created from a genuine
+/// insights API response; nothing here is simulated or estimated.
+model ClipAnalyticsSnapshot {
+  id                String   @id @default(cuid())
+  clipPublicationId String
+  capturedAt        DateTime @default(now())
+  views             Int      @default(0)
+  watchTimeSec      Float    @default(0)
+  retentionPct      Float?
+  shares            Int      @default(0)
+  saves             Int      @default(0)
+  comments          Int      @default(0)
+  reach             Int      @default(0)
+  followersGained   Int      @default(0)
+  rawJson           String   @default("{}")
+
+  publication ClipPublication @relation(fields: [clipPublicationId], references: [id], onDelete: Cascade)
+
+  @@index([clipPublicationId, capturedAt])
 }
 
 model Draft {
